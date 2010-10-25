@@ -1,5 +1,5 @@
 {% spaceless %}
-  {% if breadcrumbs or current_page %}
+  {% if breadcrumbs or active_page %}
     <ul class="breadcrumbs">
     {% for page in breadcrumbs %}
       <li>
@@ -11,7 +11,7 @@
         &rsaquo; 
       </li>
     {% endfor %}
-      <li class="current">{{ current_page.title }}</li>
+      <li class="active">{{ active_page.title }}</li>
     </ul>
   {% endif %}
 {% endspaceless %}
