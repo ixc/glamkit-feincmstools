@@ -21,6 +21,8 @@
                 {% else %}
                     {% if region_maximum_width and region_maximum_width < content.get_content.file_width %}
                         width:{{ region_maximum_width }}px;
+                    {% else %}
+                        width:{{ content.get_content.file_width }}px;
                     {% endif %}
                 {% endif %}
             {% endif %}
