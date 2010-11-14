@@ -61,7 +61,7 @@
   {% if content.link_to_original or content.link_url %}
     </a>
   {% endif %}
-  {% if content.caption %}<br /><span class="caption">{{ content.caption }}{% if content.get_content.attribution %} <span class="attribution">{{ content.get_content.attribution }}</span>{% endif %}</span>{% endif %}
+  {% if content.caption %}<br/><span class="caption">{{ content.caption }}</span>{% endif %}
 </div>
 {% if not content.wrappable %}<br style="clear:both" />{% endif %}
 {% endspaceless %}
