@@ -2,7 +2,6 @@ from django import forms
 from django.utils.translation import ugettext as _
 from django.contrib.admin.widgets import ForeignKeyRawIdWidget
 
-from adminboost.preview import ImagePreviewInlineForm
 from feincms.admin.editor import ItemEditorForm
 
 class FormWithRawIDFields(ItemEditorForm):
@@ -18,7 +17,13 @@ class FormWithRawIDFields(ItemEditorForm):
 			self.fields.insert(1, self.content_field_name, self.fields.pop(self.content_field_name))
 
 
-class ImagePreviewLumpForm(ImagePreviewInlineForm, ItemEditorForm):
-
-	def get_images(self, instance):
-		return [instance.get_content()]
+try:
+    from adminboost.preview import ImagePreviewInlineForm # Soft dependency on adminboost
+            
+    class ImagePreviewLumpForm(ImagePreviewInlineForm, ItemEditorForm):
+    
+        def get_images(self, instance):
+            return [instance.get_content()]
+        
+except ImportError:
+    pass

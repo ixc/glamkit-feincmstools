@@ -11,7 +11,6 @@ from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
 
 from base import *
-from forms import ImagePreviewLumpForm
 import settings as feincmstools_settings
 
 __all__ = ['LumpyContent', 'HierarchicalLumpyContent', 'Lump', 'Reusable', 'OneOff', 'AbstractText', 'AbstractGenericFile', 'AbstractImage', 'AbstractAudio', 'AbstractVideo']
@@ -139,17 +138,22 @@ class AbstractGenericFile(AbstractTitledFile):
 		verbose_name_plural = "Files"
 
 class AbstractImage(AbstractTitledFile):
-	file = models.ImageField(upload_to=UPLOAD_PATH+'images/%Y/%m/%d/',
-							 height_field='file_height', width_field='file_width',
-							 max_length=255)
-	file_height = models.PositiveIntegerField(editable=False)
-	file_width = models.PositiveIntegerField(editable=False)
-	alt_text = models.CharField('Alternate text', blank=True,
-								max_length=MAX_ALT_TEXT_LENGTH,
-								help_text= 'Description of the image')
+    file = models.ImageField(upload_to=UPLOAD_PATH+'images/%Y/%m/%d/',
+                             height_field='file_height', width_field='file_width',
+                             max_length=255)
+    file_height = models.PositiveIntegerField(editable=False)
+    file_width = models.PositiveIntegerField(editable=False)
+    alt_text = models.CharField('Alternate text', blank=True,
+                                max_length=MAX_ALT_TEXT_LENGTH,
+                                help_text= 'Description of the image')
 
-	form_base = ImagePreviewLumpForm
-	content_field_name = 'image'
+    content_field_name = 'image'
+    
+    try:
+        from forms import ImagePreviewLumpForm # Soft dependency on adminboost
+        form_base = ImagePreviewLumpForm
+    except ImportError:
+        pass
 
 	class Meta:
 		abstract = True
