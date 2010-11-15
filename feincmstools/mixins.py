@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.db import models
 from django.template.loader import render_to_string
 
@@ -49,6 +48,39 @@ class ImageOptionsMixin(models.Model):
     height = models.PositiveIntegerField(blank=True, null=True, help_text="Forces the height to a certain value (in pixels)")
     
     render_template = 'feincmstools/lumps/imageoptions/render.html'
+    
+    def render(self, **kwargs):
+        from easy_thumbnails.files import get_thumbnailer
+        
+        context = kwargs['context'] if 'context' in kwargs else Context()
+        region_maximum_width = context['region_maximum_width'] if 'region_maximum_width' in context else None
+        self.image_width = self.image_height = None
+        w = h = None
+        if self.expand:
+            if region_maximum_width:
+                w = float(self.expand[:-1]) * region_maximum_width / 100
+                h = float(self.get_content().file_height * w / self.get_content().file_width)
+        else:
+            if self.width:
+                w = float(self.width)
+                h = float(self.get_content().file_height * w / self.get_content().file_width)
+            else:
+                if region_maximum_width and region_maximum_width < self.get_content().file_width:
+                    w = float(region_maximum_width)
+                    h = float(self.get_content().file_height * w / self.get_content().file_width)
+            if self.height:
+                h = float(self.height)
+                if not w:
+                    w = float(self.get_content().file_width * h / self.get_content().file_height)
+        
+        if w and h:
+            self.image_width = w
+            self.resized_url = get_thumbnailer(self.get_content().file).get_thumbnail(dict(size=(w, h), quality=100)).url
+        else:
+            self.image_width = self.get_content().file_width
+            self.resized_url = self.get_content().file.url
+    
+        return super(ImageOptionsMixin, self).render(**kwargs)
     
     class Meta:
         abstract = True
