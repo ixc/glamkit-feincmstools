@@ -28,9 +28,8 @@ class HierarchicalLumpyContentAdmin(LumpyContentAdmin, editor.TreeEditor):
 ADMIN_THUMBNAIL_SIZE = (100, 100)
 
 class ImageAdmin(admin.ModelAdmin):
-    list_display = ('name', 'admin_thumbnail',)
-    list_filter = ('category',)
-    search_fields = ('name', 'category__name',)
+    list_display = ('admin_thumbnail', 'name',)
+    search_fields = ('name',)
     
     def admin_thumbnail(self, image):
         return '<img src="%s" />' % (
