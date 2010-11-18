@@ -32,7 +32,7 @@
   {% if content.link_to_original or content.link_url %}
     </a>
   {% endif %}
-  {% if content.caption %}<br/><span class="caption">{{ content.caption }}</span>{% endif %}
+  {% block caption %}{% if content.caption %}<br/><span class="caption">{{ content.caption }}</span>{% endif %}{% endblock %}
 </div>
 {% if not content.wrappable %}<br style="clear:both" />{% endif %}
 {% endspaceless %}
