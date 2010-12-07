@@ -185,6 +185,9 @@ class ReusableBase(models.base.ModelBase):
             content_field_name = attrs.get('content_field_name',
                                            getattr(concrete_model, 'content_field_name',
                                            get_base_attribute(bases, 'content_field_name', '_content')))
+            content_field_verbose_name = attrs.get('content_field_verbose_name',
+                                           getattr(concrete_model, 'content_field_verbose_name',
+                                           get_base_attribute(bases, 'content_field_verbose_name', 'content')))
             # Create a get_content() method that returns the conrete model
             attrs['get_content'] = lambda self: getattr(self, content_field_name)
             # If a render() method is not being inherited, add one that calls
@@ -218,7 +221,10 @@ class ReusableBase(models.base.ModelBase):
                                                'content_field_name': content_field_name})
                 attrs['feincms_item_editor_form'] = reusable_form_base
             # Add a foreign key to the concrete model
-            attrs[content_field_name] = models.ForeignKey(concrete_model, related_name='%(app_label)s_%(class)s_related')
+            attrs[content_field_name] = models.ForeignKey(
+                concrete_model,
+                related_name='%(app_label)s_%(class)s_related',
+                verbose_name=content_field_verbose_name)
             # Make the content type abstract
             attrs.setdefault('Meta', types.ClassType('Meta', (), {})).abstract = True
         # Create and return the class
