@@ -4,6 +4,7 @@ from django.contrib.admin.widgets import ForeignKeyRawIdWidget
 
 from feincms.admin.editor import ItemEditorForm
 
+
 class FormWithRawIDFields(ItemEditorForm):
 	raw_id_fields = []
 
@@ -19,11 +20,30 @@ class FormWithRawIDFields(ItemEditorForm):
 
 try:
     from adminboost.preview import ImagePreviewInlineForm # Soft dependency on adminboost
+    import os
+    from django.core.files import File
+    from django.conf import settings
+    from easy_thumbnails.files import Thumbnailer
             
     class ImagePreviewLumpForm(ImagePreviewInlineForm, ItemEditorForm):
     
         def get_images(self, instance):
             return [instance.get_content()]
+    
+    class FixedImagePreviewForm(ImagePreviewInlineForm, ItemEditorForm):
+        preview_instance_required = False
+        preview_paths = []
+        
+        def get_images(self, instance):
+            images = []
+            for path in self.preview_paths:
+                file_data = open(os.path.join(settings.MEDIA_ROOT, path), 'r')
+                class MockImage(object):
+                    pass
+                image = MockImage()
+                image.file = Thumbnailer(File(file_data), name=path)
+                images.append(image)
+            return images    
         
 except ImportError:
     pass
