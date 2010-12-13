@@ -76,6 +76,27 @@ class LumpyContent(Base):
     DEFAULT_REGIONS = (('main', _('Main')),)
 
     @classmethod
+    def _register_content_type_list(cls, content_types, optgroup=None):
+        # Expand any functions in the tuple into tuple items (assuming calling
+        # them returns a tuple)
+        content_types = reduce(lambda x, y: x + (y() if type(y) is types.FunctionType else (y,)), content_types, ())
+        # auto-register FeinCMS content types:
+        for content_type in content_types:
+            kwargs = {}
+            if type(content_type) in (list, tuple):
+                content_type, kwargs['regions'] = content_type
+            if optgroup is not None:
+                kwargs['optgroup'] = optgroup
+            new_content_type = cls.create_content_type(content_type, **kwargs)
+            # make it available in the module for convenience
+            name = '%s%s' % (cls.__name__, content_type.__name__)
+            if hasattr(sys.modules[cls.__module__], name):
+                pass # don't overwrite anything though...
+            else:
+                setattr(sys.modules[cls.__module__], name,
+                        new_content_type)
+    
+    @classmethod
     def _register(cls):
         if not cls._meta.abstract: # concrete subclasses only
             if cls.template_specs:
@@ -91,24 +112,12 @@ class LumpyContent(Base):
                 cls.template = Template('', '', regions)
                 cls._feincms_all_regions = cls.template.regions
 
-            # Expand any functions in the tuple into tuple items (assuming calling
-            # them returns a tuple)
-            cls.default_content_types = reduce(lambda x, y: x + (y() if type(y) is types.FunctionType else (y,)), cls.default_content_types, ())
-            # auto-register FeinCMS content types:
-            for content_type in cls.default_content_types:
-                kwargs = {}
-                if type(content_type) in (list, tuple):
-                    content_type, kwargs['regions'] = content_type
-                new_content_type = cls.create_content_type(content_type, **kwargs)
-                # make it available in the module for convenience
-                name = '%s%s' % (cls.__name__, content_type.__name__)
-                if hasattr(sys.modules[cls.__module__], name):
-                    pass # don't overwrite anything though...
-                else:
-                    setattr(sys.modules[cls.__module__], name,
-                            new_content_type)
-
-
+            if isinstance(cls.default_content_types, dict):
+                for optgroup, content_types in cls.default_content_types.items():
+                    cls._register_content_type_list(content_types, optgroup)
+            else:
+                cls._register_content_type_list(cls.default_content_types)
+            
 class HierarchicalLumpyContentBase(LumpyContentBase, MPTTModelBase):
     pass
     
