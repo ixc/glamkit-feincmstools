@@ -22,7 +22,7 @@
   ">
     
   {% if content.link_url %}
-    <a href="{{ content.link_url }}">
+    <a href="{% block link_url %}{{ content.link_url }}{% endblock %}">
   {% else %}
     {% if content.link_to_original %}
       <a href="{{ content.get_content.file.url }}">
