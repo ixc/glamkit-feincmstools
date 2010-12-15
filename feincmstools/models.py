@@ -127,7 +127,7 @@ class AbstractTitledFile(models.Model):
         return super(AbstractTitledFile, self).save(*args, **kwargs)
 
 class AbstractGenericFile(AbstractTitledFile):
-    file = models.FileField(upload_to=UPLOAD_PATH+'file/%Y/%m/%d/')
+    file = models.FileField(upload_to=UPLOAD_PATH+'file/%Y/%m/%d/', max_length=255)
 
     content_field_name = 'file'
     with_extension = True
