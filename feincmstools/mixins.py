@@ -110,7 +110,7 @@ class HierarchicalSlug(models.Model):
         super(HierarchicalSlug, self).__init__(*args, **kwargs)
     
     def _prepare_model(self):
-        if not '_slug_field' in self.__class__.__dict__:
+        if not '_the_slug' in self.__class__.__dict__:
             # Find the slug field
             slug_field_name = None
             # First, look in the MPTTMeta options for a 'slug_attr' definition
