@@ -42,9 +42,12 @@ class Lump(models.Model):
         template = getattr(self, 'render_template', getattr(self.get_content(), 'render_template', None) if hasattr(self, 'get_content') else None)
         if not template:
             raise NotImplementedError('No template defined for rendering %s content.' % self.__class__.__name__)
-        context = Context({'content': self})
+        context = Context()
         if 'context' in kwargs:
             context.update(kwargs['context'])
+        context['content'] = self
+        if hasattr(self, 'extra_context') and callable(self.extra_context):
+            context.update(self.extra_context(kwargs['request']))
         return render_to_string(template, context, context_instance=RequestContext(kwargs['request']))
     
     def __init__(self, *args, **kwargs):
@@ -84,7 +87,6 @@ class Lump(models.Model):
                 'name': name,
             }
             try:
-                #import pdb; pdb.set_trace()
                 find_template(path)
             except TemplateDoesNotExist:
                 pass
