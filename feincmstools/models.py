@@ -13,7 +13,9 @@ from django.core.exceptions import ImproperlyConfigured
 from base import *
 import settings as feincmstools_settings
 
-__all__ = ['LumpyContent', 'HierarchicalLumpyContent', 'Lump', 'Reusable', 'OneOff', 'AbstractText', 'AbstractGenericFile', 'AbstractImage', 'AbstractAudio', 'AbstractVideo']
+__all__ = ['LumpyContent', 'HierarchicalLumpyContent', 'Lump', 'Reusable',
+           'OneOff', 'AbstractText', 'AbstractGenericFile', 'AbstractImage',
+           'AbstractAudio', 'AbstractVideo']
 
 UPLOAD_PATH = getattr(settings, 'UPLOAD_PATH', 'uploads/')
 MAX_ALT_TEXT_LENGTH = 1024

@@ -8,7 +8,8 @@ from south.migration import Migrations
 from south.exceptions import NoMigrations
 from south.management.commands.schemamigration import Command as SchemaMigration
 
-from feincmstools.models import LumpyContent
+from ...models import LumpyContent
+from ...utils import get_subclasses
 
 class ExitCommand(Exception):
     pass
@@ -46,11 +47,7 @@ class Command(BaseCommand):
         # Workaround South's sneaky method of ending commands with error() calls
         SchemaMigration.error = error_log
         # Get list of apps that have models which subclass LumpyContent
-        def get_subclasses(klass):
-            return (klass,) + reduce(add, map(get_subclasses, klass.__subclasses__()), ())
-        apps_to_migrate = set([model._meta.app_label \
-                               for model in get_subclasses(LumpyContent) \
-                               if not model._meta.abstract])
+        apps_to_migrate = [model._meta.app_label for model in get_subclasses(LumpyContent)]
         if verbosity:
             print 'Automatic schema migrations will be created for the following apps:'
             print '\t%s' % ', '.join(apps_to_migrate)
