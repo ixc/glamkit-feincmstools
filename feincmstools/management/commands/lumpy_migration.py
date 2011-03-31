@@ -31,7 +31,7 @@ class Command(BaseCommand):
     processor = None
     option_list = BaseCommand.option_list + (
         make_option('--force', action='store_true', dest='force', default=False, help='Create migrations regardless of other changes.'),
-        make_option('--dry-run', action='store_true', dest='dry_run', default=False, help='Create migrations regardless of other changes.'),
+        make_option('--dry-run', action='store_true', dest='dry_run', default=False, help='Show the list of apps with lumps without creating migrations.'),
         )
     help = 'Create schema migrations for all apps using lumpy models.'
 
