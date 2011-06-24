@@ -31,17 +31,22 @@ class OneOff(object):
         abstract = True
 
 class Lump(models.Model):
+    """
+    A feincms content type that uses a template at '[app_label]/lumps/[model_name]/[init/render].html' to render itself, in admin and front-end.
+    
+    The template searches up through the model hierarchy until it finds a suitable template.
+    """
     class Meta:
         abstract = True
 
-    init_template = None # For initialisation in the admin
+    init_template = None # For initialisation IN THE ADMIN
     render_template = None # For rendering on the front end 
 
     def render(self, **kwargs):
         assert 'request' in kwargs
         template = getattr(self, 'render_template', getattr(self.get_content(), 'render_template', None) if hasattr(self, 'get_content') else None)
         if not template:
-            raise NotImplementedError('No template defined for rendering %s content.' % self.__class__.__name__)
+            raise NotImplementedError('Could not find template for rendering %s content.' % (self.__class__.__name__,))
         context = Context({'content': self})
         if 'context' in kwargs:
             context.update(kwargs['context'])
@@ -61,6 +66,14 @@ class Lump(models.Model):
         self._templates_initialised = True
         super(Lump, self).__init__(*args, **kwargs)
     
+    @staticmethod
+    def _template_path(base, name):
+        return '%(app_label)s/lumps/%(model_name)s/%(name)s' % {
+            'app_label': base._meta.app_label,
+            'model_name': base._meta.module_name,
+            'name': name,
+        }    
+
     @classmethod
     def _detect_template(cls, name):
         """
@@ -78,13 +91,8 @@ class Lump(models.Model):
                 base for base in _class.__bases__ if issubclass(base, Lump)][0]
             # (this will only take the left-most relevant path in any rare
             # cases involving diamond-relationships with Lump)
-            path = '%(app_label)s/lumps/%(model_name)s/%(name)s' % {
-                'app_label': base._meta.app_label,
-                'model_name': base._meta.module_name,
-                'name': name,
-            }
+            path = Lump._template_path(base, name)
             try:
-                #import pdb; pdb.set_trace()
                 find_template(path)
             except TemplateDoesNotExist:
                 pass
