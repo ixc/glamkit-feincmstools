@@ -48,7 +48,7 @@ class Lump(models.Model):
         assert 'request' in kwargs
         template = getattr(self, 'render_template', getattr(self.get_content(), 'render_template', None) if hasattr(self, 'get_content') else None)
         if not template:
-            raise NotImplementedError('No template defined for rendering %s content.' % self.__class__.__name__)
+            raise NotImplementedError('No template found for rendering %s content. I tried %s.' % (self.__class__.__name__, ", ".join(self.__class__._template_paths('render.html'))))
         context = Context()
         if 'context' in kwargs:
             context.update(kwargs['context'])
@@ -80,7 +80,7 @@ class Lump(models.Model):
         }    
 
     @classmethod
-    def _detect_template(cls, name):
+    def _template_paths(cls, name):
         """
         Look for template in app/model-specific location.
 
@@ -96,14 +96,26 @@ class Lump(models.Model):
                 base for base in _class.__bases__ if issubclass(base, Lump)][0]
             # (this will only take the left-most relevant path in any rare
             # cases involving diamond-relationships with Lump)
-            path = Lump._template_path(base, name)
+            yield Lump._template_path(base, name)
+            _class = base
+    
+    @classmethod
+    def _detect_template(cls, name):
+        """
+        Look for template in app/model-specific location.
+
+        Return path to template or None if not found.
+        Search using app/model names for parent classes to allow inheritance.
+        
+        """
+        # traverse parent classes up to (but not including) Lump
+        for path in cls._template_paths(name):
             try:
                 find_template(path)
             except TemplateDoesNotExist:
                 pass
             else:
                 return path
-            _class = base
         return None
 
 
