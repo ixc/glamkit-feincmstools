@@ -84,7 +84,13 @@ class LumpyContent(Base):
         for content_type in content_types:
             kwargs = {}
             if type(content_type) in (list, tuple):
-                content_type, kwargs['regions'] = content_type
+                if len(content_type) == 3:
+                    # the kwargs dictionary is passed in
+                    content_type, regions, nkwargs = content_type
+                    kwargs.update(nkwargs)
+                    kwargs['regions'] = region
+                elif len(content_type) == 2:
+                    content_type, kwargs['regions'] = content_type
             if optgroup is not None:
                 kwargs['optgroup'] = optgroup
             new_content_type = cls.create_content_type(content_type, **kwargs)
