@@ -88,7 +88,7 @@ class LumpyContent(Base):
                     # the kwargs dictionary is passed in
                     content_type, regions, nkwargs = content_type
                     kwargs.update(nkwargs)
-                    kwargs['regions'] = region
+                    kwargs['regions'] = regions
                 elif len(content_type) == 2:
                     content_type, kwargs['regions'] = content_type
             if optgroup is not None:
