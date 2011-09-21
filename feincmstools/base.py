@@ -75,6 +75,12 @@ class LumpyContent(Base):
     # Auto-register default regions and all available feincmstools content types
     DEFAULT_REGIONS = (('main', _('Main')),)
 
+    def region_has_content(self, region):
+        """ Returns True if the model has a region named :region containing some content. """
+        if region in self.content._fetch_regions():
+            return True
+        return False
+
     @classmethod
     def _register_content_type_list(cls, content_types, optgroup=None):
         # Expand any functions in the tuple into tuple items (assuming calling
