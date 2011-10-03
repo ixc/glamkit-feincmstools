@@ -1,5 +1,4 @@
 from django.contrib.admin.widgets import ForeignKeyRawIdWidget
-
 from feincms.admin.item_editor import ItemEditorForm
 
 
