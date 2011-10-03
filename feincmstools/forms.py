@@ -1,8 +1,6 @@
-from django import forms
-from django.utils.translation import ugettext as _
 from django.contrib.admin.widgets import ForeignKeyRawIdWidget
 
-from feincms.admin.editor import ItemEditorForm
+from feincms.admin.item_editor import ItemEditorForm
 
 
 class FormWithRawIDFields(ItemEditorForm):
