@@ -163,7 +163,11 @@ def get_base_attribute(bases, value, default=None):
             return getattr(base, value)
     return default
 
+
+""" OneOffBase and ReusableBase ARE DEPRECATED"""
+
 class OneOffBase(models.base.ModelBase):
+    # DEPRECATED
     def __new__(cls, name, bases, attrs):
         # Since FeinCMS does a manual call to the content type metaclass after
         # altering the Meta and attributes, we don't need to reinitialise the
@@ -185,6 +189,7 @@ class OneOffBase(models.base.ModelBase):
         return klass
 
 class ReusableBase(models.base.ModelBase):
+    # DEPRECATED
     def __new__(cls, name, bases, attrs):
         # If we're initialising the "Reusable" and "OneOff" classes that will be
         # inherited from, do nothing.

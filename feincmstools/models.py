@@ -10,6 +10,8 @@ from django.template import TemplateDoesNotExist
 from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
 
+import warnings
+
 from base import *
 import settings as feincmstools_settings
 
@@ -20,13 +22,69 @@ __all__ = ['LumpyContent', 'HierarchicalLumpyContent', 'Lump', 'Reusable',
 UPLOAD_PATH = getattr(settings, 'UPLOAD_PATH', 'uploads/')
 MAX_ALT_TEXT_LENGTH = 1024
 
+"""
+Reusable and OneOff are deprecated. The following arrangement works well in most cases, and doesn't have as much magic:
+
+from feincmstools.models import Lump
+from django.db import models
+
+class XImage(models.Model):
+    # Abstract. The fields to be filled in for each image.
+    image = models.ImageField(upload_to='uploads/images')
+    categories = models.ManyToManyField('ImageCategory', blank=True, null=True, related_name="%(app_label)s_%(class)s_related")
+
+    class Meta:
+        abstract = True
+
+class XImageUse(Lump):
+    # Abstract. The fields to be filled in for each image USE. Don't use this lump directly, use its subclasses.
+    link_to_original = models.BooleanField(default=False, help_text="The is a link to the original uploaded image file")
+    url_override = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        abstract = True
+
+    def href(self):
+        if self.url_override:
+            return self.url_override
+
+        if self.link_to_original:
+            return self.image_model.image.url
+
+        return None
+
+class Image(XImage):
+    pass
+
+# Lumps:
+
+class ReusableImageLump(XImageUse):
+    image_model = models.ForeignKey("images.Image", related_name="+")
+
+    class Meta:
+        abstract = True
+        verbose_name = "reusable image"
+
+class OneOffImageLump(XImageUse, XImage):
+    @property
+    def image_model(self):
+        return self
+
+    class Meta:
+        abstract = True
+        verbose_name = "one-off image"
+"""
+
+
 class Reusable(object):
+    warnings.warn("Reusable is deprecated. Instead, define a Lump with an FK to a concrete model.", DeprecationWarning)
     __metaclass__ = ReusableBase
 
     class Meta:
         abstract = True
 
 class OneOff(object):
+    warnings.warn("OneOff is deprecated. Instead,  define a Lump that inherits fields from an abstract model.", DeprecationWarning)
     __metaclass__ = OneOffBase
 
     class Meta:
