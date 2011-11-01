@@ -77,15 +77,22 @@ class OneOffImageLump(XImageUse, XImage):
 
 
 class Reusable(object):
-    warnings.warn("Reusable is deprecated. Instead, define a Lump with an FK to a concrete model.", DeprecationWarning)
     __metaclass__ = ReusableBase
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn("Reusable is deprecated. Instead, define a Lump with an FK to a concrete model.", DeprecationWarning)
+        super(Reusable, self).__init__(*args, **kwargs)
 
     class Meta:
         abstract = True
 
 class OneOff(object):
-    warnings.warn("OneOff is deprecated. Instead,  define a Lump that inherits fields from an abstract model.", DeprecationWarning)
     __metaclass__ = OneOffBase
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn("OneOff is deprecated. Instead, define a Lump which inherits from an abstract class.", DeprecationWarning)
+        super(OneOff, self).__init__(*args, **kwargs)
+
 
     class Meta:
         abstract = True
