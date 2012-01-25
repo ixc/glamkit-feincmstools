@@ -20,9 +20,24 @@ class HierarchicalLumpyContentAdmin(LumpyContentAdmin, editor.TreeEditor):
     def _actions_column(self, content):
         actions = super(HierarchicalLumpyContentAdmin, self)._actions_column(
             content)
-        actions.insert(0, u'<a href="add/?parent=%s" title="%s"><img src="%simg/admin/icon_addlink.gif" alt="%s"></a>' % (content.pk, _('Add child content'), settings.ADMIN_MEDIA_PREFIX ,_('Add child content')))
+        actions.insert(0,
+                       u'<a href="add/?parent=%s" title="%s">' \
+                       u'<img src="%simg/icon_addlink.gif" alt="%s"></a>' % (
+                           content.pk,
+                           _('Add child content'),
+                           settings.ADMIN_MEDIA_PREFIX,
+                           _('Add child content'))
+
+        )
         if hasattr(content, 'get_absolute_url'):
-            actions.insert(0, u'<a href="%s" title="%s"><img src="%simg/admin/selector-search.gif" alt="%s" /></a>' % (content.get_absolute_url(), _('View on site'), settings.ADMIN_MEDIA_PREFIX, _('View on site')))
+            actions.insert(0,
+                           u'<a href="%s" title="%s">'' \
+                           u'u'<img src="%simg/selector-search.gif" alt="%s" /></a>' % (
+                               content.get_absolute_url(),
+                               _('View on site'),
+                               settings.ADMIN_MEDIA_PREFIX,
+                               _('View on site'))
+            )
         return actions
 
 ADMIN_THUMBNAIL_SIZE = (100, 100)
