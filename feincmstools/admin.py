@@ -31,8 +31,8 @@ class HierarchicalLumpyContentAdmin(LumpyContentAdmin, editor.TreeEditor):
         )
         if hasattr(content, 'get_absolute_url'):
             actions.insert(0,
-                           u'<a href="%s" title="%s">'' \
-                           u'u'<img src="%simg/selector-search.gif" alt="%s" /></a>' % (
+                           u'<a href="%s" title="%s">' \
+                           u'<img src="%simg/selector-search.gif" alt="%s" /></a>' % (
                                content.get_absolute_url(),
                                _('View on site'),
                                settings.ADMIN_MEDIA_PREFIX,
