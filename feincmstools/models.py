@@ -1,188 +1,110 @@
 """ IxC extensions to FeinCMS. May perhaps be pushed back to FeinCMS core """
+from django.template.base import TemplateDoesNotExist
 import os
 
 from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext as _
-from django.template.loader import render_to_string, find_template
+from django.template.loader import render_to_string, get_template
 from django.template.context import RequestContext, Context
-from django.template import TemplateDoesNotExist
 from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
-
-import warnings
 
 from base import *
 import settings as feincmstools_settings
 
-__all__ = ['LumpyContent', 'HierarchicalLumpyContent', 'Lump', 'Reusable',
-           'OneOff', 'AbstractText', 'AbstractGenericFile', 'AbstractImage',
+__all__ = ['LumpyContent', 'HierarchicalLumpyContent', 'Lump',
+           'AbstractText', 'AbstractGenericFile', 'AbstractImage',
            'AbstractAudio', 'AbstractVideo']
 
 UPLOAD_PATH = getattr(settings, 'UPLOAD_PATH', 'uploads/')
 MAX_ALT_TEXT_LENGTH = 1024
 
-"""
-Reusable and OneOff are deprecated. The following arrangement works well in most cases, and doesn't have as much magic:
-
-from feincmstools.models import Lump
-from django.db import models
-
-class XImage(models.Model):
-    # Abstract. The fields to be filled in for each image.
-    image = models.ImageField(upload_to='uploads/images')
-    categories = models.ManyToManyField('ImageCategory', blank=True, null=True, related_name="%(app_label)s_%(class)s_related")
-
-    class Meta:
-        abstract = True
-
-class XImageUse(Lump):
-    # Abstract. The fields to be filled in for each image USE. Don't use this lump directly, use its subclasses.
-    link_to_original = models.BooleanField(default=False, help_text="The is a link to the original uploaded image file")
-    url_override = models.CharField(max_length=255, blank=True)
-
-    class Meta:
-        abstract = True
-
-    def href(self):
-        if self.url_override:
-            return self.url_override
-
-        if self.link_to_original:
-            return self.image_model.image.url
-
-        return None
-
-class Image(XImage):
-    pass
-
-# Lumps:
-
-class ReusableImageLump(XImageUse):
-    image_model = models.ForeignKey("images.Image", related_name="+")
-
-    class Meta:
-        abstract = True
-        verbose_name = "reusable image"
-
-class OneOffImageLump(XImageUse, XImage):
-    @property
-    def image_model(self):
-        return self
-
-    class Meta:
-        abstract = True
-        verbose_name = "one-off image"
-"""
-
-
-class Reusable(object):
-    __metaclass__ = ReusableBase
-
-    def __init__(self, *args, **kwargs):
-        warnings.warn("Reusable is deprecated. Instead, define a Lump with an FK to a concrete model.", DeprecationWarning)
-        super(Reusable, self).__init__(*args, **kwargs)
-
-    class Meta:
-        abstract = True
-
-class OneOff(object):
-    __metaclass__ = OneOffBase
-
-    def __init__(self, *args, **kwargs):
-        warnings.warn("OneOff is deprecated. Instead, define a Lump which inherits from an abstract class.", DeprecationWarning)
-        super(OneOff, self).__init__(*args, **kwargs)
-
-
-    class Meta:
-        abstract = True
-
 class Lump(models.Model):
     """
-    A feincms content type that uses a template at '[app_label]/lumps/[model_name]/[init/render].html' to render itself, in admin and front-end.
+    A feincms content type that uses a template at
+    '[app_label]/lumps/[model_name]/[init/render].html' to render itself, in admin and front-end.
     
-    The template searches up through the model hierarchy until it finds a suitable template.
+    The template searches up through the model hierarchy
+    until it finds a suitable template.
     """
     class Meta:
         abstract = True
 
-    init_template = None # For initialisation IN THE ADMIN
-    render_template = None # For rendering on the front end 
+    #: Path to the template for the initialization in the admin.
+    #: `py:meth:_find_templates` will be used if set to ``None``.
+    init_template = None
+
+    #: Path to the template for frontend rendering.
+    #: `py:meth:_find_templates` will be used if set to ``None``.
+    render_template = None
 
     def render(self, **kwargs):
-        assert 'request' in kwargs
-        template = getattr(self, 'render_template', getattr(self.get_content(), 'render_template', None) if hasattr(self, 'get_content') else None)
-        if not template:
-            raise NotImplementedError('No template found for rendering %s content. I tried %s.' % (self.__class__.__name__, ", ".join(self.__class__._template_paths('render.html'))))
-        context = Context()
-        if 'context' in kwargs:
-            context.update(kwargs['context'])
-        context['content'] = self
+        request = kwargs['request']
+        render_template = self.render_template or self._find_template('render.html')
+
+        context = Context(dict(
+            content=self
+        ))
+        context.update(
+            kwargs.get('context', {})
+        )
         if hasattr(self, 'extra_context') and callable(self.extra_context):
-            context.update(self.extra_context(kwargs['request']))
-        return render_to_string(template, context, context_instance=RequestContext(kwargs['request']))
+            context.update(self.extra_context(request))
+
+        return render_to_string(render_template,
+                                context,
+                                context_instance=RequestContext(request))
     
     def __init__(self, *args, **kwargs):
-        if not hasattr(self, '_templates_initialised'):
-            parent_class = getattr(self, '_feincms_content_class', None)
-            init_path = self.init_template or self.__class__._detect_template('init.html')
-            if parent_class and init_path:
-                if not hasattr(parent_class, 'feincms_item_editor_includes'):
-                    setattr(parent_class, 'feincms_item_editor_includes', {})
-                parent_class.feincms_item_editor_includes.setdefault('head', set()).add(init_path)
-            
-            if self.render_template is None:
-                self.render_template = self.__class__._detect_template('render.html')
-        self._templates_initialised = True
+        parent_class = getattr(self, '_feincms_content_class', None)
+
+        try:
+            init_template = self.init_template or self._find_template('init.html')
+
+        except TemplateDoesNotExist:
+            init_template = None
+
+        if parent_class and init_template:
+            if not hasattr(parent_class, 'feincms_item_editor_includes'):
+                setattr(parent_class, 'feincms_item_editor_includes', {})
+            parent_class.feincms_item_editor_includes.setdefault('head',
+                                                                 set()).add(init_template)
+
         super(Lump, self).__init__(*args, **kwargs)
-    
-    @staticmethod
-    def _template_path(base, name):
-        return '%(app_label)s/lumps/%(model_name)s/%(name)s' % {
-            'app_label': base._meta.app_label,
-            'model_name': base._meta.module_name,
+
+    @classmethod
+    def _find_template(cls, name):
+        """
+        Choose a template for rendering out of a list of template candidates, going up along
+        the inheritance chain.
+        Search using app/model names for parent classes to allow inheritance.
+
+        :returns: Existing template for rendering the lumpy content.
+        :rtype: str
+        :throws: TemplateDoesNotExist
+        """
+        get_template_name = lambda kls: '%(app_label)s/lumps/%(model_name)s/%(name)s' % {
+            'app_label': kls._meta.app_label,
+            'model_name': kls._meta.module_name,
             'name': name,
-        }    
+        }
 
-    @classmethod
-    def _template_paths(cls, name):
-        """
-        Look for template in app/model-specific location.
+        out = []
+        for kls in cls.mro():
+            if kls == Lump:
+                break
 
-        Return path to template or None if not found.
-        Search using app/model names for parent classes to allow inheritance.
-        
-        """
-        _class = cls
-        # traverse parent classes up to (but not including) Lump
-        while(Lump not in _class.__bases__):
-            # choose the correct path for multiple inheritance
-            base = [
-                base for base in _class.__bases__ if issubclass(base, Lump)][0]
-            # (this will only take the left-most relevant path in any rare
-            # cases involving diamond-relationships with Lump)
-            yield Lump._template_path(base, name)
-            _class = base
-    
-    @classmethod
-    def _detect_template(cls, name):
-        """
-        Look for template in app/model-specific location.
-
-        Return path to template or None if not found.
-        Search using app/model names for parent classes to allow inheritance.
-        
-        """
-        # traverse parent classes up to (but not including) Lump
-        for path in cls._template_paths(name):
+            template_name = get_template_name(kls)
             try:
-                find_template(path)
-            except TemplateDoesNotExist:
-                pass
-            else:
-                return path
-        return None
 
+                # Check whether template exists:
+                get_template(template_name)
+
+                return template_name
+            except TemplateDoesNotExist:
+                continue
+        raise TemplateDoesNotExist()
 
 class AbstractText(models.Model):
     content = models.TextField()

@@ -2,7 +2,7 @@ from django import forms
 from django.db import models
 from django.template.loader import render_to_string
 from django.forms.widgets import TextInput, Widget
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ImproperlyConfigured
 
 class FriendlyNamedMixin(models.Model):
     name = models.CharField('Friendly name',
