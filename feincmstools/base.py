@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 import warnings
 
 from django.db import models
@@ -91,25 +91,22 @@ class LumpyContent(Base):
         Register ``lumps`` in IxC terminology or ``content types`` in
         FeinCMS terminology.
         """
+        for category, lumps_data in lumps.items():
+            for lump, regions in lumps_data.items():
+                new_content_type = cls.create_content_type(
+                    lump,
+                    class_name="%s%s" % (cls.__name__, lump.__name__),
+                    regions=regions,
+                    optgroup=cls._verbosify(category),
+                )
 
-        for lump, regions in lumps.items():
-            category = regions.keys()[0]
-            regions = regions.values()[0]
-
-            new_content_type = cls.create_content_type(
-                lump,
-                class_name="%s%s" % (cls.__name__, lump.__name__),
-                regions=regions,
-                optgroup=category,
-            )
-
-            # FeinCMS does not correctly fake the module appearance,
-            # and shell_plus becomes subsequently confused.
-            setattr(
-                sys.modules[cls.__module__],
-                new_content_type.__name__,
-                new_content_type
-            )
+                # FeinCMS does not correctly fake the module appearance,
+                # and shell_plus becomes subsequently confused.
+                setattr(
+                    sys.modules[cls.__module__],
+                    new_content_type.__name__,
+                    new_content_type
+                )
 
     @classmethod
     def _reformat_lumps_datastructure(cls, lumps_definition):
@@ -126,10 +123,14 @@ class LumpyContent(Base):
         that each content type can be only available under one
         category.
         """
-        lump_registry = defaultdict(# Lumps
-            lambda: defaultdict(# Categories.
-                lambda: []                  # Regions.
-            )
+        # To get the right order, lumps must be sorted by categories in the order they came.
+        # So more natural datastructure would be
+        # Category -> (Lump -> List of Regions)
+
+        # which can be quite nicely modelled as
+
+        lump_registry = OrderedDict(
+            # category
         )
 
         regions = [r[0] for r in cls.regions]
@@ -138,24 +139,18 @@ class LumpyContent(Base):
 
             for category, lumps in region_data.items():
                 for lump in lumps:
-                    lump_name = lump.__name__
-                    lump_registry[lump][category].append(
+                    lump_registry.setdefault(category, {}).setdefault(lump, []).append(
                         region
                     )
 
-                    if len(lump_registry[lump].keys()) > 1:
-                        raise FeinCMSToolsConfigurationError(
-                            "Due to FeinCMS limitations, lump can only "
-                            "be registered under one category. "
-                            "Lump %s was tried to be registered under categories "
-                            "%s" % (
-                                lump,
-                                lump_registry[lump].keys()
-                                )
-                        )
-
         return lump_registry
 
+    @classmethod
+    def _verbosify(cls, s):
+        if not s:
+            return s
+
+        return (s[0].upper() + s[1:]).replace("_", " ")
 
 class HierarchicalLumpyContentBase(LumpyContentBase, MPTTModelBase):
     pass
