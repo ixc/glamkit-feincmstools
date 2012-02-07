@@ -1,6 +1,5 @@
-from collections import defaultdict, OrderedDict
+from collections import defaultdict
 import warnings
-import operator
 
 from django.db import models
 from django.utils.translation import ugettext as _
@@ -65,11 +64,11 @@ class LumpyContent(Base):
         else:
             cls.register_regions(*cls.regions)
             cls._register_lumps(
-                cls._reformat_lumps_datastructure(cls.lumps())
+                cls._reformat_lumps_datastructure(cls.lumps_by_region())
             )
 
     @classmethod
-    def lumps(cls):
+    def lumps_by_region(cls):
         """
         Returns the list of all lumps available for the embedding.
         The actual used list of lumps is determined by the ``cls.regions`` -
@@ -96,7 +95,7 @@ class LumpyContent(Base):
         """
         return set(
             sum(
-                [sum(map(list, cls.lumps()[r[0]].values()), [])
+                [sum(map(list, cls.lumps_by_region()[r[0]].values()), [])
                  for r in cls.regions],
                 []
             )
@@ -144,9 +143,7 @@ class LumpyContent(Base):
         # The most natural datastructure is:
         # Category -> (Lump -> List of Regions)
 
-        lump_registry = OrderedDict(
-            # category
-        )
+        lump_registry = {}
 
         regions = [r[0] for r in cls.regions]
         for region in regions:
