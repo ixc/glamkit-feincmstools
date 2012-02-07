@@ -1,5 +1,6 @@
 from collections import defaultdict, OrderedDict
 import warnings
+import operator
 
 from django.db import models
 from django.utils.translation import ugettext as _
@@ -86,6 +87,22 @@ class LumpyContent(Base):
         )
 
     @classmethod
+    def get_used_lumps(cls):
+        """
+        :return: All lumps used by the class. Useful for migrations.
+        :rtype: set
+
+        .. note:: Do not override this method, it can be used for introspection.
+        """
+        return set(
+            sum(
+                [sum(map(list, cls.lumps()[r[0]].values()), [])
+                 for r in cls.regions],
+                []
+            )
+        )
+
+    @classmethod
     def _register_lumps(cls, lumps):
         """
         Register ``lumps`` in IxC terminology or ``content types`` in
@@ -124,10 +141,8 @@ class LumpyContent(Base):
         category.
         """
         # To get the right order, lumps must be sorted by categories in the order they came.
-        # So more natural datastructure would be
+        # The most natural datastructure is:
         # Category -> (Lump -> List of Regions)
-
-        # which can be quite nicely modelled as
 
         lump_registry = OrderedDict(
             # category
