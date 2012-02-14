@@ -24,7 +24,7 @@ FeinCMS-tools can be useful if the project requires any of the following:
 * More convenient, DRY and more extendable syntax for ``content_types`` declaration.
 * The ability to create custom ``content types`` with less typing: no need to override
   ``render`` method if only the custom template needs to be provided.
-* Terminology which does not clash.
+* Terminology which does not clash with ``django.contrib.contenttypes``.
 * Easier migrations with ``django-south``.
 
 Terminology
@@ -33,10 +33,8 @@ Terminology
 We've found ``content types`` terminology used in FeinCMS confusing as it clashes
 with ``django.contrib.contenttypes``. Hence, following terms are used:
 
-* ``Lump`` - same as *content type* in FeinCMS world.
-* ``LumpyContent`` - the model to which ``Lump``s can be attached. While with FeinCMS
-  *content types* can be only attached to the ``Page`` model with FeinCMS-tools
-  ``Lump``s can be added to any ``LumpyContent`` subclass.
+* ``Lump`` - same as ``content type`` in the FeinCMS world.
+* ``LumpyContent`` - the model to which ``Lumps`` can be attached.
 
 Installation
 ############

@@ -54,11 +54,11 @@ class Lump(models.Model):
         """
         Render ``self`` using :py:attr:`render_template`.
 
-        If latter is not specified, default path
+        If latter is not specified, the default path
         ``<app_label>/lumps/<model_name>/(init|render).html`` is tried
         for every model in the inheritance chain until the existing template is found.
 
-        For example, consider the app ``pages``, where both models have
+        For example, consider the app ``pages``, where ``File`` and ``Image`` lumps have
         undefined :py:attr:`render_template`.
 
         * templates

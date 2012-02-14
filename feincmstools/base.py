@@ -69,14 +69,9 @@ class LumpyContent(Base):
         """
         Defines the lumps embedded in the given class.
 
-        Lumps which belong to the non-existing regions
-        will get ignored.
+        This method should be overridden for the subclasses.
 
         .. highlight:: python
-
-        The ``default`` value for the returned ``defaultdict``
-        will be used for the regions for which lump list wasn't
-        explicitly defined.
 
         For example, consider the following definition::
 
@@ -109,21 +104,26 @@ class LumpyContent(Base):
                         )
                     )
 
-        In this example ``body`` region will get ``QuoteLump`` and ``TextileText``,
-        ``learn_more`` will get ``ImageLump`` and ``TextLump``, while ``SecretLump`` will be,
-        alas, unused.
+        In this example the ``body`` region will get ``QuoteLump`` and ``TextileText``,
+        the ``learn_more`` region will get ``ImageLump`` and ``TextLump``, while ``SecretLump`` will be unused.
 
-        This method should be overridden for the subclasses.
+        Two rules are applied during the resolution process:
+
+        * The ``default`` value for the returned ``defaultdict``
+          is used for the regions for which lump list wasn't
+          explicitly defined.
+        * Lumps which belong to the non-existing regions
+          get ignored.
 
         .. note:: Because ``lumps_by_region`` is called from the metaclass,
-            ``super``  lead to crashes. It's safer to explicitly call ``ParentClass.lumps_by_region``
-            if required. See below for example.
+            using python ``super`` leads to crashes. Explicitly call ``ParentClass.lumps_by_region``
+            instead. See below for example.
 
         .. highlight:: python
 
         It is convenient to define per-project ``LumpyContent`` super class
-        (EG ``MyProjectLumpyContent`` in our example). Inherited ``LumpyContent``s can
-        get reuse and extend ``MyProjectLumpyContent`` lump definitions::
+        (EG ``MyProjectLumpyContent`` in our example). Inherited ``LumpyContents`` can
+        be reused to extend lump definitions::
 
             class LumpyPage(MyProjectLumpyContent):
 
