@@ -22,24 +22,64 @@ MAX_ALT_TEXT_LENGTH = 1024
 
 class Lump(models.Model):
     """
-    A feincms content type that uses a template at
-    '[app_label]/lumps/[model_name]/[init/render].html' to render itself, in admin and front-end.
-    
-    The template searches up through the model hierarchy
-    until it finds a suitable template.
+    FeinCMS content type with default ``render`` method.
     """
-    class Meta:
-        abstract = True
-
     #: Path to the template for the initialization in the admin.
-    #: `py:meth:_find_templates` will be used if set to ``None``.
+    #: :py:meth:`_find_templates` will be used if set to ``None``.
+    #: If ``init_template`` is not found, it's ignored.
     init_template = None
 
     #: Path to the template for frontend rendering.
-    #: `py:meth:_find_templates` will be used if set to ``None``.
+    #: :py:meth:`_find_templates` will be used if set to ``None``.
     render_template = None
 
+    def __init__(self, *args, **kwargs):
+        parent_class = getattr(self, '_feincms_content_class', None)
+
+        try:
+            init_template = self.init_template or self._find_template('init.html')
+
+        except TemplateDoesNotExist:
+            init_template = None
+
+        if parent_class and init_template:
+            if not hasattr(parent_class, 'feincms_item_editor_includes'):
+                setattr(parent_class, 'feincms_item_editor_includes', {})
+            parent_class.feincms_item_editor_includes.setdefault('head',
+                set()).add(init_template)
+
+        super(Lump, self).__init__(*args, **kwargs)
+
     def render(self, **kwargs):
+        """
+        Render ``self`` using :py:attr:`render_template`.
+
+        If latter is not specified, default path
+        ``<app_label>/lumps/<model_name>/(init|render).html`` is tried
+        for every model in the inheritance chain until the existing template is found.
+
+        For example, consider the app ``pages``, where both models have
+        undefined :py:attr:`render_template`.
+
+        * templates
+            * pages
+                * file
+                    * render.html
+                    * init.html
+        * lumps
+            * ``File``
+            * ``Image(File)``
+
+        In this case:
+
+        * ``File`` will be rendered using ``templates/pages/file/render.html``.
+        * ``Image`` has no corresponding template, hence it will use same template as ``File``
+          for rendering.
+
+        :return: Rendered content type.
+        :throws: :py:class:`TemplateDoesNotExist`
+        :rtype: unicode.
+        """
         request = kwargs['request']
         render_template = self.render_template or self._find_template('render.html')
 
@@ -56,29 +96,11 @@ class Lump(models.Model):
                                 context,
                                 context_instance=RequestContext(request))
     
-    def __init__(self, *args, **kwargs):
-        parent_class = getattr(self, '_feincms_content_class', None)
-
-        try:
-            init_template = self.init_template or self._find_template('init.html')
-
-        except TemplateDoesNotExist:
-            init_template = None
-
-        if parent_class and init_template:
-            if not hasattr(parent_class, 'feincms_item_editor_includes'):
-                setattr(parent_class, 'feincms_item_editor_includes', {})
-            parent_class.feincms_item_editor_includes.setdefault('head',
-                                                                 set()).add(init_template)
-
-        super(Lump, self).__init__(*args, **kwargs)
-
     @classmethod
     def _find_template(cls, name):
         """
         Choose a template for rendering out of a list of template candidates, going up along
         the inheritance chain.
-        Search using app/model names for parent classes to allow inheritance.
 
         :returns: Existing template for rendering the lumpy content.
         :rtype: str
@@ -105,6 +127,9 @@ class Lump(models.Model):
             except TemplateDoesNotExist:
                 continue
         raise TemplateDoesNotExist()
+
+    class Meta:
+        abstract = True
 
 class AbstractText(models.Model):
     content = models.TextField()

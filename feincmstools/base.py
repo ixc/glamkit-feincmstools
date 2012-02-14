@@ -1,3 +1,5 @@
+# -*- coding: utf8 -*-
+
 from collections import defaultdict
 import warnings
 
@@ -21,37 +23,32 @@ class LumpyContentBase(models.base.ModelBase):
 
     def __new__(mcs, name, bases, attrs):
         new_class = super(LumpyContentBase, mcs).__new__(mcs, name, bases, attrs)
-        new_class.register(name)
+        new_class.register()
         return new_class
 
 
 class LumpyContent(Base):
     """
-    As opposed to FlatPage content -- can have FeinCMS content regions.
+    A model which has ``Lumps`` attached to it.
+
+    See :py:meth:`feincmstools.base.LumpyContent.lumps_by_region` for sample definition and a
+    quick intro.
     """
-
-    __metaclass__ = LumpyContentBase
-
-    class Meta:
-        abstract = True
-
-
-    # Public API
-
-    #: Available templates.
+    #: Available templates, overrides ``regions`` and ``lumps_by_region``.
+    #: See FeinCMS documentation for ``register_templates``.
     template_specs = None # FIXME: Maybe rename to `available_templates`
 
     #: Auto-register default regions and all available feincmstools content types
     regions = (
         ('main', _('Main')),
-        )
+    )
 
     @classmethod
-    def register(cls, name):
+    def register(cls):
         """
         Create the tables for the attached lumps.
         """
-        # Concrete subclasses only
+        # Concrete subclasses only.
         if cls._meta.abstract: return
 
         if cls.template_specs:
@@ -70,14 +67,82 @@ class LumpyContent(Base):
     @classmethod
     def lumps_by_region(cls):
         """
-        Returns the list of all lumps available for the embedding.
-        The actual used list of lumps is determined by the ``cls.regions`` -
-        lumps under unused regions are ignored and everything else is rendered.
+        Defines the lumps embedded in the given class.
+
+        Lumps which belong to the non-existing regions
+        will get ignored.
+
+        .. highlight:: python
+
+        The ``default`` value for the returned ``defaultdict``
+        will be used for the regions for which lump list wasn't
+        explicitly defined.
+
+        For example, consider the following definition::
+
+            class MyProjectLumpyContent(LumpyContent):
+
+                regions = (
+                    ('body', 'Body'),
+                    ('learn_more', 'Learn More')
+                )
+
+                @classmethod
+                def lumps_by_region(cls):
+                    return defaultdict(
+                        lambda: dict(       # Default set of lumps
+                            main = [
+                                ImageLump,
+                                TextLump
+                            ]
+                        ),
+                        body = dict(        # Region name
+                            main = [        # Category name, ``optgroup`` in FeinCMS
+                                QuoteLump,
+                                TextileTextLump
+                            ]
+                        ),
+                        unused_region = dict(
+                            main = [
+                                SecretLump
+                            ]
+                        )
+                    )
+
+        In this example ``body`` region will get ``QuoteLump`` and ``TextileText``,
+        ``learn_more`` will get ``ImageLump`` and ``TextLump``, while ``SecretLump`` will be,
+        alas, unused.
+
+        This method should be overridden for the subclasses.
+
+        .. note:: Because ``lumps_by_region`` is called from the metaclass,
+            ``super``  lead to crashes. It's safer to explicitly call ``ParentClass.lumps_by_region``
+            if required. See below for example.
+
+        .. highlight:: python
+
+        It is convenient to define per-project ``LumpyContent`` super class
+        (EG ``MyProjectLumpyContent`` in our example). Inherited ``LumpyContent``s can
+        get reuse and extend ``MyProjectLumpyContent`` lump definitions::
+
+            class LumpyPage(MyProjectLumpyContent):
+
+                @classmethod
+                def lumps_by_region(cls):
+                    # Alas, using ``super`` leads to crashes.
+                    lumps = MyProjectLumpyContent.lumps_by_region()
+                    lumps['body']['main'] += [
+                        ArtistLump,
+                        ArtworkLump
+                    ]
+                    return lumps
 
         :return: The lumps definitions.
-        Region -> Category -> List of lumps
 
-        :rtype: Three level dict. String -> string -> List of lumps classes.
+        :rtype:
+            ``defaultdict``:  region name, ``str`` →
+                ``dict``: category_names, ``str`` →
+                    ``list`` of lumps registered under the given category in the given region.
         """
         return defaultdict(
             lambda: dict(
@@ -90,8 +155,6 @@ class LumpyContent(Base):
         """
         :return: All lumps used by the class. Useful for migrations.
         :rtype: set
-
-        .. note:: Do not override this method, it can be used for introspection.
         """
         return set(
             sum(
@@ -127,17 +190,11 @@ class LumpyContent(Base):
     @classmethod
     def _reformat_lumps_datastructure(cls, lumps_definition):
         """
-        FeinCMS and FeinCMS tools use different datastructures to
-        describe the content types attached to an object.
-
-        Convert the datastructure from what feincmstools expect
+        Converts the datastructure from what feincmstools expect
         to what feinCMS expects.
 
-        Change the datastructure describing lumps.
-
-        NOTE that FeinCMS imposes an additional limitation of
-        that each content type can be only available under one
-        category.
+        It is necessary because FeinCMS and FeinCMS tools use different
+        datastructures to describe the content types attached to an object.
         """
         # To get the right order, lumps must be sorted by categories in the order they came.
         # The most natural datastructure is:
@@ -159,10 +216,24 @@ class LumpyContent(Base):
 
     @classmethod
     def _verbosify(cls, s):
-        if not s:
-            return s
+        """
+        Convert the category name to it's verbose version.
 
+            >>> LumpyContent._verbosify('')
+            ''
+
+            >>> LumpyContent._verbosify('learn_more')
+            'Learn more'
+        """
+        if not s:
+            # Will catch the empty string.
+            return s
         return (s[0].upper() + s[1:]).replace("_", " ")
+
+    __metaclass__ = LumpyContentBase
+
+    class Meta:
+        abstract = True
 
 class HierarchicalLumpyContentBase(LumpyContentBase, MPTTModelBase):
     pass
