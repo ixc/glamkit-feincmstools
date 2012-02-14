@@ -18,20 +18,15 @@ and hopefully more convenient way to register content types.
 Use cases
 #########
 
-FeinCMS-tools can be useful if the project requires any of the following:
+We've found the FeinCMS requirement "one-master-Page-model" rather limiting.
+Many a-times we've wanted to attach
 
-* Attaching ``content_types`` to arbitrary Django models.
-* More convenient, DRY and more extendable syntax for ``content_types`` declaration.
-* The ability to create custom ``content types`` with less typing: no need to override
-  ``render`` method if only the custom template needs to be provided.
-* Terminology which does not clash.
-* Easier migrations with ``django-south``.
 
 Terminology
 ###########
 
-We've found ``content types`` terminology used in FeinCMS confusing as it clashes
-with ``django.contrib.contenttypes``. Hence, following terms are used:
+We've found *content types* terminology used in FeinCMS confusing as it clashes
+with ``django.contrib.contenttypes``.
 
 * ``Lump`` - same as *content type* in FeinCMS world.
 * ``LumpyContent`` - the model to which ``Lump``s can be attached. While with FeinCMS
@@ -41,8 +36,7 @@ with ``django.contrib.contenttypes``. Hence, following terms are used:
 Installation
 ############
 
-Assuming you already have ``FeinCMS`` installed, just add ``feincmstools`` to ``INSTALLED_APPS``.
-No new dependencies are introduced.
+Add ``feincmstools`` to ``INSTALLED_APPS``.
 
 Configuration
 #############
@@ -51,7 +45,7 @@ Lupms Definition
 ****************
 
 By convention ``Lumps`` live in ``<app_name>/lumps.py``.
-Defined lumps should inherit from :py:class:`feincmstools.models.Lump`.
+Defined lumps should inherit from ``models.Lump``.
 
 .. highlight:: python
 
@@ -62,7 +56,7 @@ Sample lumps definition::
     class ReusableImageLump(Lump):
 
         # Note that without "related_name='+'" name clashes will occur
-        # if this ``Lump`` is used in many parent models.
+        # for inherited models.
         image_model = models.ForeignKey("images.Image", related_name="+")
 
         alt_text = models.CharField(max_length=100)
@@ -86,24 +80,13 @@ Sample lumps definition::
 Lumpy content definition
 ************************
 
-New lumpy contents should extend :py:class:`feincmstools.base.LumpyContent`. Like normal models,
-they live inside ``models.py``.
-
 .. autoclass:: feincmstools.base.LumpyContent
     :members:
 
-South migration helper
-**********************
-For every defined ``Lump``, table needs to be created for
-every ``LumpyContent`` it is attached to.
+Indices and tables
+==================
 
-FeinCMS-tools provides the command ``lumpy_migration``::
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
 
-    ./manage.py lumpy_migration
-
-It is equivalent to running ``./manage.py schemamigration <app_name> auto`` for every app
-which contains models extending ``LumpyContent``.
-
-It can also be used to get the list of all apps which will need migrations::
-
-    ./manage.py lumpy_migration --dry-run

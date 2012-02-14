@@ -54,20 +54,13 @@ FeinCMS is already installed for the project.</p>
 and hopefully more convenient way to register content types.</p>
 <div class="section" id="use-cases">
 <h2>Use cases<a class="headerlink" href="#use-cases" title="Permalink to this headline">¶</a></h2>
-<p>FeinCMS-tools can be useful if the project requires any of the following:</p>
-<ul class="simple">
-<li>Attaching <tt class="docutils literal"><span class="pre">content_types</span></tt> to arbitrary Django models.</li>
-<li>More convenient, DRY and more extendable syntax for <tt class="docutils literal"><span class="pre">content_types</span></tt> declaration.</li>
-<li>The ability to create custom <tt class="docutils literal"><span class="pre">content</span> <span class="pre">types</span></tt> with less typing: no need to override
-<tt class="docutils literal"><span class="pre">render</span></tt> method if only the custom template needs to be provided.</li>
-<li>Terminology which does not clash.</li>
-<li>Easier migrations with <tt class="docutils literal"><span class="pre">django-south</span></tt>.</li>
-</ul>
+<p>We&#8217;ve found the FeinCMS requirement &#8220;one-master-Page-model&#8221; rather limiting.
+Many a-times we&#8217;ve wanted to attach</p>
 </div>
 <div class="section" id="terminology">
 <h2>Terminology<a class="headerlink" href="#terminology" title="Permalink to this headline">¶</a></h2>
-<p>We&#8217;ve found <tt class="docutils literal"><span class="pre">content</span> <span class="pre">types</span></tt> terminology used in FeinCMS confusing as it clashes
-with <tt class="docutils literal"><span class="pre">django.contrib.contenttypes</span></tt>. Hence, following terms are used:</p>
+<p>We&#8217;ve found <em>content types</em> terminology used in FeinCMS confusing as it clashes
+with <tt class="docutils literal"><span class="pre">django.contrib.contenttypes</span></tt>.</p>
 <ul class="simple">
 <li><tt class="docutils literal"><span class="pre">Lump</span></tt> - same as <em>content type</em> in FeinCMS world.</li>
 <li><tt class="docutils literal"><span class="pre">LumpyContent</span></tt> - the model to which <tt class="docutils literal"><span class="pre">Lump``s</span> <span class="pre">can</span> <span class="pre">be</span> <span class="pre">attached.</span> <span class="pre">While</span> <span class="pre">with</span> <span class="pre">FeinCMS</span>
@@ -77,22 +70,21 @@ with <tt class="docutils literal"><span class="pre">django.contrib.contenttypes<
 </div>
 <div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
-<p>Assuming you already have <tt class="docutils literal"><span class="pre">FeinCMS</span></tt> installed, just add <tt class="docutils literal"><span class="pre">feincmstools</span></tt> to <tt class="docutils literal"><span class="pre">INSTALLED_APPS</span></tt>.
-No new dependencies are introduced.</p>
+<p>Add <tt class="docutils literal"><span class="pre">feincmstools</span></tt> to <tt class="docutils literal"><span class="pre">INSTALLED_APPS</span></tt>.</p>
 </div>
 <div class="section" id="configuration">
 <h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="lupms-definition">
 <h3>Lupms Definition<a class="headerlink" href="#lupms-definition" title="Permalink to this headline">¶</a></h3>
 <p>By convention <tt class="docutils literal"><span class="pre">Lumps</span></tt> live in <tt class="docutils literal"><span class="pre">&lt;app_name&gt;/lumps.py</span></tt>.
-Defined lumps should inherit from <a class="reference internal" href="#feincmstools.models.Lump" title="feincmstools.models.Lump"><tt class="xref py py-class docutils literal"><span class="pre">feincmstools.models.Lump</span></tt></a>.</p>
+Defined lumps should inherit from <tt class="docutils literal"><span class="pre">models.Lump</span></tt>.</p>
 <p>Sample lumps definition:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">feincmstools.models</span> <span class="kn">import</span> <span class="n">Lump</span>
 
 <span class="k">class</span> <span class="nc">ReusableImageLump</span><span class="p">(</span><span class="n">Lump</span><span class="p">):</span>
 
     <span class="c"># Note that without &quot;related_name=&#39;+&#39;&quot; name clashes will occur</span>
-    <span class="c"># if this ``Lump`` is used in many parent models.</span>
+    <span class="c"># for inherited models.</span>
     <span class="n">image_model</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">ForeignKey</span><span class="p">(</span><span class="s">&quot;images.Image&quot;</span><span class="p">,</span> <span class="n">related_name</span><span class="o">=</span><span class="s">&quot;+&quot;</span><span class="p">)</span>
 
     <span class="n">alt_text</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
@@ -114,83 +106,23 @@ Defined lumps should inherit from <a class="reference internal" href="#feincmsto
 <dl class="class">
 <dt id="feincmstools.models.Lump">
 <em class="property">class </em><tt class="descclassname">feincmstools.models.</tt><tt class="descname">Lump</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#feincmstools.models.Lump" title="Permalink to this definition">¶</a></dt>
-<dd><p>FeinCMS content type with default <tt class="docutils literal"><span class="pre">render</span></tt> method.</p>
+<dd><p>A feincms content type that uses a template at
+&#8216;[app_label]/lumps/[model_name]/[init/render].html&#8217; to render itself,
+in admin and front-end.</p>
+<p>The template searches up through the model hierarchy
+until it finds a suitable template.</p>
 <dl class="attribute">
 <dt id="feincmstools.models.Lump.init_template">
 <tt class="descname">init_template</tt><em class="property"> = None</em><a class="headerlink" href="#feincmstools.models.Lump.init_template" title="Permalink to this definition">¶</a></dt>
 <dd><p>Path to the template for the initialization in the admin.
-<tt class="xref py py-meth docutils literal"><span class="pre">_find_templates()</span></tt> will be used if set to <tt class="docutils literal"><span class="pre">None</span></tt>.
-If <tt class="docutils literal"><span class="pre">init_template</span></tt> is not found, it&#8217;s ignored.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="feincmstools.models.Lump.render">
-<tt class="descname">render</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#feincmstools.models.Lump.render" title="Permalink to this definition">¶</a></dt>
-<dd><p>Render <tt class="docutils literal"><span class="pre">self</span></tt> using <tt class="xref py py-attr docutils literal"><span class="pre">render_template</span></tt>.</p>
-<p>If latter is not specified, default path
-<tt class="docutils literal"><span class="pre">&lt;app_label&gt;/lumps/&lt;model_name&gt;/(init|render).html</span></tt> is tried
-for every model in the inheritance chain until the existing template is found.</p>
-<p>For example, consider the app <tt class="docutils literal"><span class="pre">pages</span></tt>, where both models have
-undefined <tt class="xref py py-attr docutils literal"><span class="pre">render_template</span></tt>.</p>
-<ul>
-<li><dl class="first docutils">
-<dt>templates</dt>
-<dd><ul class="first last">
-<li><dl class="first docutils">
-<dt>pages</dt>
-<dd><ul class="first last">
-<li><dl class="first docutils">
-<dt>file</dt>
-<dd><ul class="first last simple">
-<li>render.html</li>
-<li>init.html</li>
-</ul>
-</dd>
-</dl>
-</li>
-</ul>
-</dd>
-</dl>
-</li>
-</ul>
-</dd>
-</dl>
-</li>
-<li><dl class="first docutils">
-<dt>lumps</dt>
-<dd><ul class="first last simple">
-<li><tt class="docutils literal"><span class="pre">File</span></tt></li>
-<li><tt class="docutils literal"><span class="pre">Image(File)</span></tt></li>
-</ul>
-</dd>
-</dl>
-</li>
-</ul>
-<p>In this case:</p>
-<ul class="simple">
-<li><tt class="docutils literal"><span class="pre">File</span></tt> will be rendered using <tt class="docutils literal"><span class="pre">templates/pages/file/render.html</span></tt>.</li>
-<li><tt class="docutils literal"><span class="pre">Image</span></tt> has no corresponding template, hence it will use same template as <tt class="docutils literal"><span class="pre">File</span></tt>
-for rendering.</li>
-</ul>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Rendered content type.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Throws :</th><td class="field-body"><tt class="xref py py-class docutils literal"><span class="pre">TemplateDoesNotExist</span></tt></td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">unicode.</td>
-</tr>
-</tbody>
-</table>
+<cite>py:meth:_find_templates</cite> will be used if set to <tt class="docutils literal"><span class="pre">None</span></tt>.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="feincmstools.models.Lump.render_template">
 <tt class="descname">render_template</tt><em class="property"> = None</em><a class="headerlink" href="#feincmstools.models.Lump.render_template" title="Permalink to this definition">¶</a></dt>
 <dd><p>Path to the template for frontend rendering.
-<tt class="xref py py-meth docutils literal"><span class="pre">_find_templates()</span></tt> will be used if set to <tt class="docutils literal"><span class="pre">None</span></tt>.</p>
+<cite>py:meth:_find_templates</cite> will be used if set to <tt class="docutils literal"><span class="pre">None</span></tt>.</p>
 </dd></dl>
 
 </dd></dl>
@@ -198,14 +130,11 @@ for rendering.</li>
 </div>
 <div class="section" id="lumpy-content-definition">
 <h3>Lumpy content definition<a class="headerlink" href="#lumpy-content-definition" title="Permalink to this headline">¶</a></h3>
-<p>New lumpy contents should extend <a class="reference internal" href="#feincmstools.base.LumpyContent" title="feincmstools.base.LumpyContent"><tt class="xref py py-class docutils literal"><span class="pre">feincmstools.base.LumpyContent</span></tt></a>. Like normal models,
-they live inside <tt class="docutils literal"><span class="pre">models.py</span></tt>.</p>
 <dl class="class">
 <dt id="feincmstools.base.LumpyContent">
 <em class="property">class </em><tt class="descclassname">feincmstools.base.</tt><tt class="descname">LumpyContent</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#feincmstools.base.LumpyContent" title="Permalink to this definition">¶</a></dt>
-<dd><p>A model which has <tt class="docutils literal"><span class="pre">Lumps</span></tt> attached to it.</p>
-<p>See <a class="reference internal" href="#feincmstools.base.LumpyContent.lumps_by_region" title="feincmstools.base.LumpyContent.lumps_by_region"><tt class="xref py py-meth docutils literal"><span class="pre">feincmstools.base.LumpyContent.lumps_by_region()</span></tt></a> for sample definition and a
-quick intro.</p>
+<dd><p>Any model which inherits from this class can get FeinCMS regions
+attached to it.</p>
 <dl class="classmethod">
 <dt id="feincmstools.base.LumpyContent.get_used_lumps">
 <em class="property">classmethod </em><tt class="descname">get_used_lumps</tt><big>(</big><big>)</big><a class="headerlink" href="#feincmstools.base.LumpyContent.get_used_lumps" title="Permalink to this definition">¶</a></dt>
@@ -230,7 +159,7 @@ will get ignored.</p>
 <p>The <tt class="docutils literal"><span class="pre">default</span></tt> value for the returned <tt class="docutils literal"><span class="pre">defaultdict</span></tt>
 will be used for the regions for which lump list wasn&#8217;t
 explicitly defined.</p>
-<p>For example, consider the following definition:</p>
+<p>EG consider the following definition:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">MyProjectLumpyContent</span><span class="p">(</span><span class="n">LumpyContent</span><span class="p">):</span>
 
     <span class="n">regions</span> <span class="o">=</span> <span class="p">(</span>
@@ -272,8 +201,8 @@ alas, unused.</p>
 if required. See below for example.</p>
 </div>
 <p>It is convenient to define per-project <tt class="docutils literal"><span class="pre">LumpyContent</span></tt> super class
-(EG <tt class="docutils literal"><span class="pre">MyProjectLumpyContent</span></tt> in our example). Inherited <tt class="docutils literal"><span class="pre">LumpyContent``s</span> <span class="pre">can</span>
-<span class="pre">get</span> <span class="pre">reuse</span> <span class="pre">and</span> <span class="pre">extend</span> <span class="pre">``MyProjectLumpyContent</span></tt> lump definitions:</p>
+(EG <tt class="docutils literal"><span class="pre">MyProjectLumpyContent</span></tt> in our example). Inherited <tt class="docutils literal"><span class="pre">LumpyContents</span></tt> can
+be reused and extended in the lump definitions:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">LumpyPage</span><span class="p">(</span><span class="n">MyProjectLumpyContent</span><span class="p">):</span>
 
     <span class="nd">@classmethod</span>
@@ -294,10 +223,10 @@ if required. See below for example.</p>
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The lumps definitions.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><dl class="docutils">
-<dt><tt class="docutils literal"><span class="pre">defaultdict</span></tt>:  region name, <tt class="docutils literal"><span class="pre">str</span></tt> →</dt>
+<dt>Default dict mapping region names to</dt>
 <dd><dl class="first last docutils">
-<dt><tt class="docutils literal"><span class="pre">dict</span></tt>: category_names, <tt class="docutils literal"><span class="pre">str</span></tt> →</dt>
-<dd><tt class="docutils literal"><span class="pre">list</span></tt> of lumps registered under the given category in the given region.</dd>
+<dt>dict mapping category names to</dt>
+<dd>list of lumps registered under the given category.</dd>
 </dl>
 </dd>
 </dl>
@@ -322,27 +251,21 @@ if required. See below for example.</p>
 <dl class="attribute">
 <dt id="feincmstools.base.LumpyContent.template_specs">
 <tt class="descname">template_specs</tt><em class="property"> = None</em><a class="headerlink" href="#feincmstools.base.LumpyContent.template_specs" title="Permalink to this definition">¶</a></dt>
-<dd><p>Available templates, overrides <tt class="docutils literal"><span class="pre">regions</span></tt> and <tt class="docutils literal"><span class="pre">lumps_by_region</span></tt>.
-See FeinCMS documentation for <tt class="docutils literal"><span class="pre">register_templates</span></tt>.</p>
+<dd><p>Available templates.</p>
 </dd></dl>
 
 </dd></dl>
 
 </div>
-<div class="section" id="south-migration-helper">
-<h3>South migration helper<a class="headerlink" href="#south-migration-helper" title="Permalink to this headline">¶</a></h3>
-<p>For every defined <tt class="docutils literal"><span class="pre">Lump</span></tt>, table needs to be created for
-every <tt class="docutils literal"><span class="pre">LumpyContent</span></tt> it is attached to.</p>
-<p>FeinCMS-tools provides the command <tt class="docutils literal"><span class="pre">lumpy_migration</span></tt>:</p>
-<div class="highlight-python"><pre>./manage.py lumpy_migration</pre>
-</div>
-<p>It is equivalent to running <tt class="docutils literal"><span class="pre">./manage.py</span> <span class="pre">schemamigration</span> <span class="pre">&lt;app_name&gt;</span> <span class="pre">auto</span></tt> for every app
-which contains models extending <tt class="docutils literal"><span class="pre">LumpyContent</span></tt>.</p>
-<p>It can also be used to get the list of all apps which will need migrations:</p>
-<div class="highlight-python"><pre>./manage.py lumpy_migration --dry-run</pre>
 </div>
 </div>
-</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><em>Index</em></a></li>
+<li><a class="reference internal" href="py-modindex.html"><em>Module Index</em></a></li>
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
 </div>
 
 
@@ -360,11 +283,11 @@ which contains models extending <tt class="docutils literal"><span class="pre">L
 <li><a class="reference internal" href="#configuration">Configuration</a><ul>
 <li><a class="reference internal" href="#lupms-definition">Lupms Definition</a></li>
 <li><a class="reference internal" href="#lumpy-content-definition">Lumpy content definition</a></li>
-<li><a class="reference internal" href="#south-migration-helper">South migration helper</a></li>
 </ul>
 </li>
 </ul>
 </li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 </ul>
 
   <h3>This Page</h3>
