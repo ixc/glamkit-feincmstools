@@ -1,0 +1,406 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>FeinCMS-tools &mdash; feincmstools 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="feincmstools 0.1 documentation" href="#" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="#">feincmstools 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="feincms-tools">
+<h1>FeinCMS-tools<a class="headerlink" href="#feincms-tools" title="Permalink to this headline">¶</a></h1>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This guide assumes a familiarity with FeinCMS and that
+FeinCMS is already installed for the project.</p>
+</div>
+<p>FeinCMS-tools is a wrapper around FeinCMS which provides a different,
+and hopefully more convenient way to register content types.</p>
+<div class="section" id="use-cases">
+<h2>Use cases<a class="headerlink" href="#use-cases" title="Permalink to this headline">¶</a></h2>
+<p>FeinCMS-tools can be useful if the project requires any of the following:</p>
+<ul class="simple">
+<li>Attaching <tt class="docutils literal"><span class="pre">content_types</span></tt> to arbitrary Django models.</li>
+<li>More convenient, DRY and more extendable syntax for <tt class="docutils literal"><span class="pre">content_types</span></tt> declaration.</li>
+<li>The ability to create custom <tt class="docutils literal"><span class="pre">content</span> <span class="pre">types</span></tt> with less typing: no need to override
+<tt class="docutils literal"><span class="pre">render</span></tt> method if only the custom template needs to be provided.</li>
+<li>Terminology which does not clash.</li>
+<li>Easier migrations with <tt class="docutils literal"><span class="pre">django-south</span></tt>.</li>
+</ul>
+</div>
+<div class="section" id="terminology">
+<h2>Terminology<a class="headerlink" href="#terminology" title="Permalink to this headline">¶</a></h2>
+<p>We&#8217;ve found <tt class="docutils literal"><span class="pre">content</span> <span class="pre">types</span></tt> terminology used in FeinCMS confusing as it clashes
+with <tt class="docutils literal"><span class="pre">django.contrib.contenttypes</span></tt>. Hence, following terms are used:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">Lump</span></tt> - same as <em>content type</em> in FeinCMS world.</li>
+<li><tt class="docutils literal"><span class="pre">LumpyContent</span></tt> - the model to which <tt class="docutils literal"><span class="pre">Lump``s</span> <span class="pre">can</span> <span class="pre">be</span> <span class="pre">attached.</span> <span class="pre">While</span> <span class="pre">with</span> <span class="pre">FeinCMS</span>
+<span class="pre">*content</span> <span class="pre">types*</span> <span class="pre">can</span> <span class="pre">be</span> <span class="pre">only</span> <span class="pre">attached</span> <span class="pre">to</span> <span class="pre">the</span> <span class="pre">``Page</span></tt> model with FeinCMS-tools
+<tt class="docutils literal"><span class="pre">Lump``s</span> <span class="pre">can</span> <span class="pre">be</span> <span class="pre">added</span> <span class="pre">to</span> <span class="pre">any</span> <span class="pre">``LumpyContent</span></tt> subclass.</li>
+</ul>
+</div>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>Assuming you already have <tt class="docutils literal"><span class="pre">FeinCMS</span></tt> installed, just add <tt class="docutils literal"><span class="pre">feincmstools</span></tt> to <tt class="docutils literal"><span class="pre">INSTALLED_APPS</span></tt>.
+No new dependencies are introduced.</p>
+</div>
+<div class="section" id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="lupms-definition">
+<h3>Lupms Definition<a class="headerlink" href="#lupms-definition" title="Permalink to this headline">¶</a></h3>
+<p>By convention <tt class="docutils literal"><span class="pre">Lumps</span></tt> live in <tt class="docutils literal"><span class="pre">&lt;app_name&gt;/lumps.py</span></tt>.
+Defined lumps should inherit from <a class="reference internal" href="#feincmstools.models.Lump" title="feincmstools.models.Lump"><tt class="xref py py-class docutils literal"><span class="pre">feincmstools.models.Lump</span></tt></a>.</p>
+<p>Sample lumps definition:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">feincmstools.models</span> <span class="kn">import</span> <span class="n">Lump</span>
+
+<span class="k">class</span> <span class="nc">ReusableImageLump</span><span class="p">(</span><span class="n">Lump</span><span class="p">):</span>
+
+    <span class="c"># Note that without &quot;related_name=&#39;+&#39;&quot; name clashes will occur</span>
+    <span class="c"># if this ``Lump`` is used in many parent models.</span>
+    <span class="n">image_model</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">ForeignKey</span><span class="p">(</span><span class="s">&quot;images.Image&quot;</span><span class="p">,</span> <span class="n">related_name</span><span class="o">=</span><span class="s">&quot;+&quot;</span><span class="p">)</span>
+
+    <span class="n">alt_text</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+
+    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+        <span class="c"># Lumps have to be abstract</span>
+        <span class="n">abstract</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">verbose_name</span> <span class="o">=</span> <span class="s">&quot;reusable image&quot;</span>
+
+<span class="k">class</span> <span class="nc">OneOffImageLump</span><span class="p">(</span><span class="n">Lump</span><span class="p">):</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">ImageField</span><span class="p">(</span><span class="n">upload_to</span><span class="o">=</span><span class="s">&#39;uploads/images&#39;</span><span class="p">)</span>
+        <span class="n">alt_text</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+
+        <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+            <span class="n">abstract</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">verbose_name</span> <span class="o">=</span> <span class="s">&quot;one-off image&quot;</span>
+</pre></div>
+</div>
+<dl class="class">
+<dt id="feincmstools.models.Lump">
+<em class="property">class </em><tt class="descclassname">feincmstools.models.</tt><tt class="descname">Lump</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#feincmstools.models.Lump" title="Permalink to this definition">¶</a></dt>
+<dd><p>FeinCMS content type with default <tt class="docutils literal"><span class="pre">render</span></tt> method.</p>
+<dl class="attribute">
+<dt id="feincmstools.models.Lump.init_template">
+<tt class="descname">init_template</tt><em class="property"> = None</em><a class="headerlink" href="#feincmstools.models.Lump.init_template" title="Permalink to this definition">¶</a></dt>
+<dd><p>Path to the template for the initialization in the admin.
+<tt class="xref py py-meth docutils literal"><span class="pre">_find_templates()</span></tt> will be used if set to <tt class="docutils literal"><span class="pre">None</span></tt>.
+If <tt class="docutils literal"><span class="pre">init_template</span></tt> is not found, it&#8217;s ignored.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="feincmstools.models.Lump.render">
+<tt class="descname">render</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#feincmstools.models.Lump.render" title="Permalink to this definition">¶</a></dt>
+<dd><p>Render <tt class="docutils literal"><span class="pre">self</span></tt> using <tt class="xref py py-attr docutils literal"><span class="pre">render_template</span></tt>.</p>
+<p>If latter is not specified, default path
+<tt class="docutils literal"><span class="pre">&lt;app_label&gt;/lumps/&lt;model_name&gt;/(init|render).html</span></tt> is tried
+for every model in the inheritance chain until the existing template is found.</p>
+<p>For example, consider the app <tt class="docutils literal"><span class="pre">pages</span></tt>, where both models have
+undefined <tt class="xref py py-attr docutils literal"><span class="pre">render_template</span></tt>.</p>
+<ul>
+<li><dl class="first docutils">
+<dt>templates</dt>
+<dd><ul class="first last">
+<li><dl class="first docutils">
+<dt>pages</dt>
+<dd><ul class="first last">
+<li><dl class="first docutils">
+<dt>file</dt>
+<dd><ul class="first last simple">
+<li>render.html</li>
+<li>init.html</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>lumps</dt>
+<dd><ul class="first last simple">
+<li><tt class="docutils literal"><span class="pre">File</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">Image(File)</span></tt></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<p>In this case:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">File</span></tt> will be rendered using <tt class="docutils literal"><span class="pre">templates/pages/file/render.html</span></tt>.</li>
+<li><tt class="docutils literal"><span class="pre">Image</span></tt> has no corresponding template, hence it will use same template as <tt class="docutils literal"><span class="pre">File</span></tt>
+for rendering.</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Rendered content type.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Throws :</th><td class="field-body"><tt class="xref py py-class docutils literal"><span class="pre">TemplateDoesNotExist</span></tt></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">unicode.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="feincmstools.models.Lump.render_template">
+<tt class="descname">render_template</tt><em class="property"> = None</em><a class="headerlink" href="#feincmstools.models.Lump.render_template" title="Permalink to this definition">¶</a></dt>
+<dd><p>Path to the template for frontend rendering.
+<tt class="xref py py-meth docutils literal"><span class="pre">_find_templates()</span></tt> will be used if set to <tt class="docutils literal"><span class="pre">None</span></tt>.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="lumpy-content-definition">
+<h3>Lumpy content definition<a class="headerlink" href="#lumpy-content-definition" title="Permalink to this headline">¶</a></h3>
+<p>New lumpy contents should extend <a class="reference internal" href="#feincmstools.base.LumpyContent" title="feincmstools.base.LumpyContent"><tt class="xref py py-class docutils literal"><span class="pre">feincmstools.base.LumpyContent</span></tt></a>. Like normal models,
+they live inside <tt class="docutils literal"><span class="pre">models.py</span></tt>.</p>
+<dl class="class">
+<dt id="feincmstools.base.LumpyContent">
+<em class="property">class </em><tt class="descclassname">feincmstools.base.</tt><tt class="descname">LumpyContent</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#feincmstools.base.LumpyContent" title="Permalink to this definition">¶</a></dt>
+<dd><p>A model which has <tt class="docutils literal"><span class="pre">Lumps</span></tt> attached to it.</p>
+<p>See <a class="reference internal" href="#feincmstools.base.LumpyContent.lumps_by_region" title="feincmstools.base.LumpyContent.lumps_by_region"><tt class="xref py py-meth docutils literal"><span class="pre">feincmstools.base.LumpyContent.lumps_by_region()</span></tt></a> for sample definition and a
+quick intro.</p>
+<dl class="classmethod">
+<dt id="feincmstools.base.LumpyContent.get_used_lumps">
+<em class="property">classmethod </em><tt class="descname">get_used_lumps</tt><big>(</big><big>)</big><a class="headerlink" href="#feincmstools.base.LumpyContent.get_used_lumps" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">All lumps used by the class. Useful for migrations.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">set</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="feincmstools.base.LumpyContent.lumps_by_region">
+<em class="property">classmethod </em><tt class="descname">lumps_by_region</tt><big>(</big><big>)</big><a class="headerlink" href="#feincmstools.base.LumpyContent.lumps_by_region" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the lumps embedded in the given class.</p>
+<p>Lumps which belong to the non-existing regions
+will get ignored.</p>
+<p>The <tt class="docutils literal"><span class="pre">default</span></tt> value for the returned <tt class="docutils literal"><span class="pre">defaultdict</span></tt>
+will be used for the regions for which lump list wasn&#8217;t
+explicitly defined.</p>
+<p>For example, consider the following definition:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">MyProjectLumpyContent</span><span class="p">(</span><span class="n">LumpyContent</span><span class="p">):</span>
+
+    <span class="n">regions</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">(</span><span class="s">&#39;body&#39;</span><span class="p">,</span> <span class="s">&#39;Body&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s">&#39;learn_more&#39;</span><span class="p">,</span> <span class="s">&#39;Learn More&#39;</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">lumps_by_region</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">defaultdict</span><span class="p">(</span>
+            <span class="k">lambda</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span>       <span class="c"># Default set of lumps</span>
+                <span class="n">main</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">ImageLump</span><span class="p">,</span>
+                    <span class="n">TextLump</span>
+                <span class="p">]</span>
+            <span class="p">),</span>
+            <span class="n">body</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>        <span class="c"># Region name</span>
+                <span class="n">main</span> <span class="o">=</span> <span class="p">[</span>        <span class="c"># Category name, ``optgroup`` in FeinCMS</span>
+                    <span class="n">QuoteLump</span><span class="p">,</span>
+                    <span class="n">TextileTextLump</span>
+                <span class="p">]</span>
+            <span class="p">),</span>
+            <span class="n">unused_region</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="n">main</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">SecretLump</span>
+                <span class="p">]</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+<p>In this example <tt class="docutils literal"><span class="pre">body</span></tt> region will get <tt class="docutils literal"><span class="pre">QuoteLump</span></tt> and <tt class="docutils literal"><span class="pre">TextileText</span></tt>,
+<tt class="docutils literal"><span class="pre">learn_more</span></tt> will get <tt class="docutils literal"><span class="pre">ImageLump</span></tt> and <tt class="docutils literal"><span class="pre">TextLump</span></tt>, while <tt class="docutils literal"><span class="pre">SecretLump</span></tt> will be,
+alas, unused.</p>
+<p>This method should be overridden for the subclasses.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Because <tt class="docutils literal"><span class="pre">lumps_by_region</span></tt> is called from the metaclass,
+<tt class="docutils literal"><span class="pre">super</span></tt>  lead to crashes. It&#8217;s safer to explicitly call <tt class="docutils literal"><span class="pre">ParentClass.lumps_by_region</span></tt>
+if required. See below for example.</p>
+</div>
+<p>It is convenient to define per-project <tt class="docutils literal"><span class="pre">LumpyContent</span></tt> super class
+(EG <tt class="docutils literal"><span class="pre">MyProjectLumpyContent</span></tt> in our example). Inherited <tt class="docutils literal"><span class="pre">LumpyContent``s</span> <span class="pre">can</span>
+<span class="pre">get</span> <span class="pre">reuse</span> <span class="pre">and</span> <span class="pre">extend</span> <span class="pre">``MyProjectLumpyContent</span></tt> lump definitions:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">LumpyPage</span><span class="p">(</span><span class="n">MyProjectLumpyContent</span><span class="p">):</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">lumps_by_region</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="c"># Alas, using ``super`` leads to crashes.</span>
+        <span class="n">lumps</span> <span class="o">=</span> <span class="n">MyProjectLumpyContent</span><span class="o">.</span><span class="n">lumps_by_region</span><span class="p">()</span>
+        <span class="n">lumps</span><span class="p">[</span><span class="s">&#39;body&#39;</span><span class="p">][</span><span class="s">&#39;main&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="p">[</span>
+            <span class="n">ArtistLump</span><span class="p">,</span>
+            <span class="n">ArtworkLump</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="n">lumps</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The lumps definitions.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">defaultdict</span></tt>:  region name, <tt class="docutils literal"><span class="pre">str</span></tt> →</dt>
+<dd><dl class="first last docutils">
+<dt><tt class="docutils literal"><span class="pre">dict</span></tt>: category_names, <tt class="docutils literal"><span class="pre">str</span></tt> →</dt>
+<dd><tt class="docutils literal"><span class="pre">list</span></tt> of lumps registered under the given category in the given region.</dd>
+</dl>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="feincmstools.base.LumpyContent.regions">
+<tt class="descname">regions</tt><em class="property"> = (('main', u'Main'),)</em><a class="headerlink" href="#feincmstools.base.LumpyContent.regions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Auto-register default regions and all available feincmstools content types</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="feincmstools.base.LumpyContent.register">
+<em class="property">classmethod </em><tt class="descname">register</tt><big>(</big><big>)</big><a class="headerlink" href="#feincmstools.base.LumpyContent.register" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create the tables for the attached lumps.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="feincmstools.base.LumpyContent.template_specs">
+<tt class="descname">template_specs</tt><em class="property"> = None</em><a class="headerlink" href="#feincmstools.base.LumpyContent.template_specs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Available templates, overrides <tt class="docutils literal"><span class="pre">regions</span></tt> and <tt class="docutils literal"><span class="pre">lumps_by_region</span></tt>.
+See FeinCMS documentation for <tt class="docutils literal"><span class="pre">register_templates</span></tt>.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="south-migration-helper">
+<h3>South migration helper<a class="headerlink" href="#south-migration-helper" title="Permalink to this headline">¶</a></h3>
+<p>For every defined <tt class="docutils literal"><span class="pre">Lump</span></tt>, table needs to be created for
+every <tt class="docutils literal"><span class="pre">LumpyContent</span></tt> it is attached to.</p>
+<p>FeinCMS-tools provides the command <tt class="docutils literal"><span class="pre">lumpy_migration</span></tt>:</p>
+<div class="highlight-python"><pre>./manage.py lumpy_migration</pre>
+</div>
+<p>It is equivalent to running <tt class="docutils literal"><span class="pre">./manage.py</span> <span class="pre">schemamigration</span> <span class="pre">&lt;app_name&gt;</span> <span class="pre">auto</span></tt> for every app
+which contains models extending <tt class="docutils literal"><span class="pre">LumpyContent</span></tt>.</p>
+<p>It can also be used to get the list of all apps which will need migrations:</p>
+<div class="highlight-python"><pre>./manage.py lumpy_migration --dry-run</pre>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">FeinCMS-tools</a><ul>
+<li><a class="reference internal" href="#use-cases">Use cases</a></li>
+<li><a class="reference internal" href="#terminology">Terminology</a></li>
+<li><a class="reference internal" href="#installation">Installation</a></li>
+<li><a class="reference internal" href="#configuration">Configuration</a><ul>
+<li><a class="reference internal" href="#lupms-definition">Lupms Definition</a></li>
+<li><a class="reference internal" href="#lumpy-content-definition">Lumpy content definition</a></li>
+<li><a class="reference internal" href="#south-migration-helper">South migration helper</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="#">feincmstools 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, IxC.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>
