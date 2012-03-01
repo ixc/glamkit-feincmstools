@@ -60,9 +60,9 @@ class LumpyContent(Base):
             cls.register_templates(*cls.template_specs)
         else:
             cls.register_regions(*cls.regions)
-            cls._register_lumps(
-                cls._reformat_lumps_datastructure(cls.lumps_by_region())
-            )
+        cls._register_lumps(
+            cls._reformat_lumps_datastructure(cls.lumps_by_region())
+        )
 
     @classmethod
     def lumps_by_region(cls):
@@ -163,7 +163,24 @@ class LumpyContent(Base):
                 []
             )
         )
-
+    
+    @classmethod
+    def _get_regions(cls):
+        """
+        Find all regions used in the class, including those defined via
+        cls.template_specs (which override any defined via cls.regions).
+        
+        :return: All regions defined for the class.
+        :rtype: set
+        """
+        if cls.template_specs:
+            return set(r[0]
+                for t in cls.template_specs
+                for r in t.get('regions', [])
+            )
+        else:
+            return set(r[0] for r in cls.regions)
+    
     @classmethod
     def _register_lumps(cls, lumps):
         """
@@ -201,9 +218,8 @@ class LumpyContent(Base):
         # Category -> (Lump -> List of Regions)
 
         lump_registry = {}
-
-        regions = [r[0] for r in cls.regions]
-        for region in regions:
+        
+        for region in cls._get_regions():
             region_data = lumps_definition[region]
 
             for category, lumps in region_data.items():
