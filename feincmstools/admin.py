@@ -2,9 +2,10 @@ from django.contrib import admin
 from django.conf import settings
 from django.utils.translation import ugettext as _
 
-from feincms.admin import editor
+from feincms.admin.item_editor import ItemEditor
+from feincms.admin.tree_editor import TreeEditor
 
-class LumpyContentAdmin(editor.ItemEditor):
+class LumpyContentAdmin(ItemEditor):
     
     def get_template_list(self):
         opts = self.model._meta
@@ -14,7 +15,7 @@ class LumpyContentAdmin(editor.ItemEditor):
             'admin/%s/item_editor.html' % opts.app_label
             ] + super(LumpyContentAdmin, self).get_template_list()
     
-class HierarchicalLumpyContentAdmin(LumpyContentAdmin, editor.TreeEditor):
+class HierarchicalLumpyContentAdmin(LumpyContentAdmin, TreeEditor):
     raw_id_fields = ('parent',)
 
     def _actions_column(self, content):
