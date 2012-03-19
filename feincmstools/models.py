@@ -83,19 +83,18 @@ class Lump(models.Model):
         request = kwargs['request']
         render_template = self.render_template or self._find_template('render.html')
 
-        context = Context(dict(
-            content=self
-        ))
+        context = Context() if request is None else RequestContext(request)
+        context['content'] = self
+
         context.update(
             kwargs.get('context', {})
         )
         if hasattr(self, 'extra_context') and callable(self.extra_context):
             context.update(self.extra_context(request))
 
-        return render_to_string(render_template,
-                                context,
-                                context_instance=RequestContext(request))
-    
+        return render_to_string(render_template, context)
+
+
     @classmethod
     def _find_template(cls, name):
         """
