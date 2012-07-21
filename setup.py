@@ -3,10 +3,10 @@
 from setuptools import setup, find_packages
 
 setup(name='glamkit-feincmstools',
-    version='0.0.1',
+    version='0.5.0',
     description='Some neat and useful bits on top of FeinCMS',
-    author='Julien Phalip',
-    author_email='julien@interaction.net.au',
+    author='Greg Turner',
+    author_email='greg@interaction.net.au',
     url='http://glamkit.org/',
     packages=find_packages(),
     zip_safe=False,
