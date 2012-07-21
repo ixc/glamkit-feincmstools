@@ -1,8 +1,6 @@
-from operator import add
 from optparse import make_option
 
 from django.core.management.base import BaseCommand
-from django.db import models
 
 from south.migration import Migrations
 from south.exceptions import NoMigrations

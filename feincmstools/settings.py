@@ -7,7 +7,7 @@ import sys
 PREFIX = 'FEINCMSTOOLS_'
 DEFAULT_SETTINGS = {
     'CONTENT_VIEW_CHOICES': (), # e.g. (('My View', 'myapp.views.myview'),)
-    }
+}
 
 def prefixed(string):
     return '%s%s' % (PREFIX, string)
