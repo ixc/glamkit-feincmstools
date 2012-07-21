@@ -5,7 +5,7 @@ from django.utils.translation import ugettext as _
 from feincms.admin import editor
 
 class LumpyContentAdmin(editor.ItemEditor):
-    
+
     def get_template_list(self):
         opts = self.model._meta
         return [
@@ -13,7 +13,7 @@ class LumpyContentAdmin(editor.ItemEditor):
                 opts.app_label, opts.object_name.lower()),
             'admin/%s/item_editor.html' % opts.app_label
             ] + super(LumpyContentAdmin, self).get_template_list()
-    
+
 class HierarchicalLumpyContentAdmin(LumpyContentAdmin, editor.TreeEditor):
     raw_id_fields = ('parent',)
 
@@ -39,15 +39,3 @@ class HierarchicalLumpyContentAdmin(LumpyContentAdmin, editor.TreeEditor):
                                _('View on site'))
             )
         return actions
-
-ADMIN_THUMBNAIL_SIZE = (100, 100)
-
-class ImageAdmin(admin.ModelAdmin):
-    list_display = ('admin_thumbnail', 'name',)
-    search_fields = ('name',)
-    
-    def admin_thumbnail(self, image):
-        return '<img src="%s" />' % (
-            image.get_thumbnail(size=ADMIN_THUMBNAIL_SIZE).url)
-    admin_thumbnail.allow_tags = True
-    admin_thumbnail.short_description = 'Thumbnail'
