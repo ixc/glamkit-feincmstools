@@ -6,7 +6,7 @@ from south.migration import Migrations
 from south.exceptions import NoMigrations
 from south.management.commands.schemamigration import Command as SchemaMigration
 
-from ...models import LumpyContent
+from ...models import ChunkyContent
 from ...utils import get_subclasses
 
 class ExitCommand(Exception):
@@ -29,9 +29,9 @@ class Command(BaseCommand):
     processor = None
     option_list = BaseCommand.option_list + (
         make_option('--force', action='store_true', dest='force', default=False, help='Create migrations regardless of other changes.'),
-        make_option('--dry-run', action='store_true', dest='dry_run', default=False, help='Show the list of apps with lumps without creating migrations.'),
+        make_option('--dry-run', action='store_true', dest='dry_run', default=False, help='Show the list of apps with chunky content without creating migrations.'),
         )
-    help = 'Create schema migrations for all apps using lumpy models.'
+    help = 'Create schema migrations for all apps that have models that use chunky content.'
 
     def handle(self, *args, **options):
         global command_log
@@ -44,8 +44,8 @@ class Command(BaseCommand):
         
         # Workaround South's sneaky method of ending commands with error() calls
         SchemaMigration.error = error_log
-        # Get list of apps that have models which subclass LumpyContent
-        apps_to_migrate = [model._meta.app_label for model in get_subclasses(LumpyContent)]
+        # Get list of apps that have models which subclass ChunkyContent
+        apps_to_migrate = [model._meta.app_label for model in get_subclasses(ChunkyContent)]
         if verbosity:
             print 'Automatic schema migrations will be created for the following apps:'
             print '\t%s' % ', '.join(apps_to_migrate)

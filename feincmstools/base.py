@@ -13,26 +13,26 @@ from django.template.loader import render_to_string, find_template
 from django.template.context import RequestContext, Context
 from django.template import TemplateDoesNotExist
 
-__all__ = ['LumpyContent', 'LumpyContentBase', 'HierarchicalLumpyContent', 'Lump']
+__all__ = ['ChunkyContent', 'ChunkyContentBase', 'HierarchicalChunkyContent', 'Chunk']
 
-# --- Lumpy models ------------------------------------------------------------
+# --- Chunky models ------------------------------------------------------------
 
-class LumpyContentBase(models.base.ModelBase):
+class ChunkyContentBase(models.base.ModelBase):
     """
     Metaclass which simply calls ``register()`` for each new class.
     """
 
     def __new__(mcs, name, bases, attrs):
-        new_class = super(LumpyContentBase, mcs).__new__(mcs, name, bases, attrs)
+        new_class = super(ChunkyContentBase, mcs).__new__(mcs, name, bases, attrs)
         new_class._register()
         return new_class
 
-class LumpyContent(create_base_model()):
+class ChunkyContent(create_base_model()):
     """
-    A model which can have FeinCMS content regions, aka 'Lumps' attached to it.
+    A model which can have FeinCMS content regions, aka ``Chunk``s attached to it.
 
-    See :py:meth:`feincmstools.base.LumpyContent.lumps_by_region` for sample definition and a
-    quick intro.
+    See :py:meth:`feincmstools.base.ChunkyContent.chunks_by_region` for sample
+    definition and a quick intro.
 
     See feincms.models.create_base_model for definitions of the register_* and
     create_content_type.
@@ -72,13 +72,13 @@ class LumpyContent(create_base_model()):
 
     Where the list contents are the *args to the functions above.
 
-    2. Register content types (aka Lumps).
+    2. Register content types (aka Chunks).
 
     In FeinCMS, you do this with successive calls to
-    Page.create_content_type(lump_model, regions=None, class_name=None, **kwargs)
+    Page.create_content_type(chunk_model, regions=None, class_name=None, **kwargs)
 
     FeinCMSTools steps through the regions, and registers the content types in
-    cls.lumps_by_region(region). Define lumps_by_region in subclasses.
+    cls.chunks_by_region(region). Define chunks_by_region in subclasses.
     """
 
     # PUBLIC
@@ -89,27 +89,27 @@ class LumpyContent(create_base_model()):
         abstract = True
 
     @classmethod
-    def lumps_by_region(cls, region):
+    def chunks_by_region(cls, region):
         """
         This should return the list of content types that
         are allowed in that region, grouped by section.
 
         This method should be overridden for the subclasses.
 
-        :return: The lumps definitions for the given region.
-        Each returned list is formatted ('category', [Lumps]), thus:
+        :return: The chunks defined for the given region.
+        Each returned list is formatted ('category', [Chunks]), thus:
 
         [
-            (None, (TextileLump,)),
-            ('Media resources', (OneOffImage, ReusableImage, Video,)),
-            ('Files', (OneOffFile, ReusableFile)),
+            (None, (TextileChunk,)),
+            ('Media resources', (OneOffImageChunk, ReusableImageChunk, VideoChunk,)),
+            ('Files', (OneOffFileChunk, ReusableFileChunk)),
         ]
 
         If category is ``None``, these content types will appear first in the menu.
 
         :rtype:
             ``list`` of ``tuples`` →
-                category_name, ``str``, ``list`` of lumps registered under the given category in the given region.
+                category_name, ``str``, ``list`` of chunks registered under the given category in the given region.
 
         Which results in the following menu in the admin edit form:
 
@@ -122,8 +122,8 @@ class LumpyContent(create_base_model()):
                 One-off file
                 Reusable file
 
-        .. note:: Because ``lumps_by_region`` is called from the metaclass,
-        using python ``super`` leads to crashes. Explicitly call ``ParentClass.lumps_by_region``
+        .. note:: Because ``chunks_by_region`` is called from the metaclass,
+        using python ``super`` leads to crashes. Explicitly call ``ParentClass.chunks_by_region``
         instead. See below for example.
 
         """
@@ -139,12 +139,12 @@ class LumpyContent(create_base_model()):
         return False
 
     @classmethod
-    def get_used_lumps(cls):
+    def get_used_chunks(cls):
         """
-        :return: All lumps used by the class. Useful for migrations.
+        :return: All chunk models used by the class. Useful for migrations.
         :rtype: ``set``
         """
-        lxr = cls._get_lumps_by_region()
+        lxr = cls._get_chunks_by_region()
 
         r = set()
 
@@ -155,21 +155,21 @@ class LumpyContent(create_base_model()):
 
     #PRIVATE
 
-    __metaclass__ = LumpyContentBase
+    __metaclass__ = ChunkyContentBase
 
     @classmethod
-    def _get_lumps_by_region(cls):
+    def _get_chunks_by_region(cls):
         """
-        :return: All lumps grouped by category, then into regions.
+        :return: All chunks grouped by category, then into regions.
         :rtype: ``list`` of ``tuple``s
         """
-        return [(r.key, cls.lumps_by_region(r.key)) for r in cls._feincms_all_regions]
+        return [(r.key, cls.chunks_by_region(r.key)) for r in cls._feincms_all_regions]
 
 
     @classmethod
     def _register(cls):
         """
-        Create the tables for the attached lumps.
+        Create the tables for the attached chunks.
         """
         if not cls._meta.abstract: # concrete subclasses only
             # register templates or regions
@@ -195,7 +195,7 @@ class LumpyContent(create_base_model()):
     def _register_content_types(cls):
 
         # retrieve a mapping of content types for each region
-        types_by_regions = cls._get_lumps_by_region()
+        types_by_regions = cls._get_chunks_by_region()
 
         # populate a dict of registration parameters for each type
         # e.g. type: (category, [regions])
@@ -225,17 +225,17 @@ class LumpyContent(create_base_model()):
                 new_content_type
             )
 
-class HierarchicalLumpyContentBase(LumpyContentBase, MPTTModelBase):
+class HierarchicalChunkyContentBase(ChunkyContentBase, MPTTModelBase):
     pass
 
-class HierarchicalLumpyContent(LumpyContent, MPTTModel):
+class HierarchicalChunkyContent(ChunkyContent, MPTTModel):
     """
-    LumpyContent with hierarchical encoding via MPTT.
+    ChunkyContent arranged hierarchically via MPTT.
 
     This defines and handles the 'parent' field in a similar way to feincms.Page
     """
 
-    __metaclass__ = HierarchicalLumpyContentBase
+    __metaclass__ = HierarchicalChunkyContentBase
 
     parent = models.ForeignKey('self', verbose_name=_('Parent'), blank=True,
                                null=True, related_name='children')
@@ -255,10 +255,10 @@ class HierarchicalLumpyContent(LumpyContent, MPTTModel):
 
 #-------------------------------------------------------------------------------
 
-class Lump(models.Model):
+class Chunk(models.Model):
     """
     A feincms content type that uses a template at
-        '[app_label]/lumps/[model_name]/[init/render].html'
+        '[app_label]/chunks/[model_name]/[init/render].html'
     to render itself, in admin and front-end.
 
     The template searches up through the model hierarchy until it finds a
@@ -295,11 +295,11 @@ class Lump(models.Model):
             if self.render_template is None:
                 self.render_template = self.__class__._detect_template('render.html')
         self._templates_initialised = True
-        super(Lump, self).__init__(*args, **kwargs)
+        super(Chunk, self).__init__(*args, **kwargs)
 
     @staticmethod
     def _template_path(base, name):
-        return '%(app_label)s/lumps/%(model_name)s/%(name)s' % {
+        return '%(app_label)s/chunks/%(model_name)s/%(name)s' % {
             'app_label': base._meta.app_label,
             'model_name': base._meta.module_name,
             'name': name,
@@ -315,14 +315,14 @@ class Lump(models.Model):
 
         """
         _class = cls
-        # traverse parent classes up to (but not including) Lump
-        while(Lump not in _class.__bases__):
+        # traverse parent classes up to (but not including) Chunk
+        while(Chunk not in _class.__bases__):
             # choose the correct path for multiple inheritance
             base = [
-                base for base in _class.__bases__ if issubclass(base, Lump)][0]
+                base for base in _class.__bases__ if issubclass(base, Chunk)][0]
             # (this will only take the left-most relevant path in any rare
-            # cases involving diamond-relationships with Lump)
-            yield Lump._template_path(base, name)
+            # cases involving diamond-relationships with Chunk)
+            yield Chunk._template_path(base, name)
             _class = base
 
     @classmethod
@@ -334,7 +334,7 @@ class Lump(models.Model):
         Search using app/model names for parent classes to allow inheritance.
 
         """
-        # traverse parent classes up to (but not including) Lump
+        # traverse parent classes up to (but not including) Chunk
         for path in cls._template_paths(name):
             try:
                 find_template(path)
@@ -343,3 +343,32 @@ class Lump(models.Model):
             else:
                 return path
         return None
+
+def LumpyContent(*args, **kwargs):
+    from warnings import warn
+    warn("Lumps are Chunks now: "
+    "LumpyContent is deprecated; use ChunkyContent instead.",
+    DeprecationWarning, stacklevel=2)
+    return ChunkyContent(*args, **kwargs)
+
+def LumpyContentBase(*args, **kwargs):
+    from warnings import warn
+    warn("Lumps are Chunks now: "
+    "LumpyContentBase is deprecated; use ChunkyContentBase instead.",
+    DeprecationWarning, stacklevel=2)
+    return ChunkyContentBase(*args, **kwargs)
+
+def HierarchicalLumpyContent(*args, **kwargs):
+    from warnings import warn
+    warn("Lumps are Chunks now: "
+    "HierarchicalLumpyContent is deprecated; use HierarchicalChunkyContent instead.",
+    DeprecationWarning, stacklevel=2)
+    return HierarchicalChunkyContent(*args, **kwargs)
+
+def Lump(*args, **kwargs):
+    from warnings import warn
+    warn("Lumps are Chunks now: "
+    "Lump is deprecated; use Chunk instead.",
+    DeprecationWarning, stacklevel=2)
+    return Chunk(*args, **kwargs)
+

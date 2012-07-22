@@ -4,7 +4,7 @@ from django.utils.translation import ugettext as _
 from feincms.admin.item_editor import ItemEditor
 from feincms.admin.tree_editor import TreeEditor
 
-class LumpyContentAdmin(ItemEditor):
+class ChunkyContentAdmin(ItemEditor):
 
     def get_template_list(self):
         opts = self.model._meta
@@ -12,13 +12,13 @@ class LumpyContentAdmin(ItemEditor):
             'admin/%s/%s/item_editor.html' % (
                 opts.app_label, opts.object_name.lower()),
             'admin/%s/item_editor.html' % opts.app_label
-            ] + super(LumpyContentAdmin, self).get_template_list()
+            ] + super(ChunkyContentAdmin, self).get_template_list()
 
-class HierarchicalLumpyContentAdmin(LumpyContentAdmin, TreeEditor):
+class HierarchicalChunkyContentAdmin(ChunkyContentAdmin, TreeEditor):
     raw_id_fields = ('parent',)
 
     def _actions_column(self, content):
-        actions = super(HierarchicalLumpyContentAdmin, self)._actions_column(
+        actions = super(HierarchicalChunkyContentAdmin, self)._actions_column(
             content)
         actions.insert(0,
                        u'<a href="add/?parent=%s" title="%s">' \
@@ -39,3 +39,17 @@ class HierarchicalLumpyContentAdmin(LumpyContentAdmin, TreeEditor):
                                _('View on site'))
             )
         return actions
+
+def LumpyContentAdmin(*args, **kwargs):
+    from warnings import warn
+    warn("Lumps are Chunks now: "
+    "LumpyContentAdmin is deprecated; use ChunkyContentAdmin instead.",
+    DeprecationWarning, stacklevel=2)
+    return ChunkyContentAdmin(*args, **kwargs)
+
+def HierarchicalLumpyContentAdmin(*args, **kwargs):
+    from warnings import warn
+    warn("Lumps are Chunks now: "
+    "HierarchicalLumpyContentAdmin is deprecated; use HierarchicalChunkyContentAdmin instead.",
+    DeprecationWarning, stacklevel=2)
+    return HierarchicalChunkyContentAdmin(*args, **kwargs)

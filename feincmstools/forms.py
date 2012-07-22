@@ -2,7 +2,6 @@ from django.contrib.admin.widgets import ForeignKeyRawIdWidget
 from django.contrib import admin
 from feincms.admin.item_editor import ItemEditorForm
 
-
 class FormWithRawIDFields(ItemEditorForm):
     raw_id_fields = []
 
@@ -26,7 +25,7 @@ try:
     from django.conf import settings
     from easy_thumbnails.files import Thumbnailer
             
-    class ImagePreviewLumpForm(ImagePreviewInlineForm, ItemEditorForm):
+    class ImagePreviewChunkForm(ImagePreviewInlineForm, ItemEditorForm):
     
         def get_images(self, instance):
             return [instance.get_content()]
