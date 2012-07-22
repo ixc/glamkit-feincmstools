@@ -257,9 +257,19 @@ class HierarchicalChunkyContent(ChunkyContent, MPTTModel):
 
 class Chunk(models.Model):
     """
-    A feincms content type that uses a template at
-        '[app_label]/chunks/[model_name]/[init/render].html'
+    A feincms content type that uses a template
     to render itself, in admin and front-end.
+
+    Template locations are the first matching of:
+
+    chunks/[chunk_defining_app]/[chunk_model]/[chunk_using_app]_[chunk_using_model]_[region_name].html
+    chunks/[chunk_defining_app]/[chunk_model]/[chunk_using_model]_[region_name].html
+    chunks/[chunk_defining_app]/[chunk_model]/[region_name].html
+    chunks/[chunk_defining_app]/[chunk_model]/render.html
+
+    And for admin:
+
+    chunks/[chunk_defining_app]/[chunk_model]/admin_init.html
 
     The template searches up through the model hierarchy until it finds a
     suitable template.
@@ -267,14 +277,15 @@ class Chunk(models.Model):
     class Meta:
         abstract = True
 
-    init_template = None # For initialisation IN THE ADMIN
+    admin_template = None # For initialisation in the admin
     render_template = None # For rendering on the front end
 
     def render(self, **kwargs):
         assert 'request' in kwargs
-        template = getattr(self, 'render_template', getattr(self.get_content(), 'render_template', None) if hasattr(self, 'get_content') else None)
+
+        template = self.render_template or self._find_render_template_path(self.region)
         if not template:
-            raise NotImplementedError('No template found for rendering %s content. I tried %s.' % (self.__class__.__name__, ", ".join(self.__class__._template_paths('render.html'))))
+            raise NotImplementedError('No template found for rendering %s content. I tried ["%s"].' % (self.__class__.__name__, '", "'.join(self._render_template_paths(self.region))))
         context = Context()
         if 'context' in kwargs:
             context.update(kwargs['context'])
@@ -284,65 +295,97 @@ class Chunk(models.Model):
         return render_to_string(template, context, context_instance=RequestContext(kwargs['request']))
 
     def __init__(self, *args, **kwargs):
-        if not hasattr(self, '_templates_initialised'):
+        super(Chunk, self).__init__(*args, **kwargs)
+        if not hasattr(self, '__templates_initialised'):
             parent_class = getattr(self, '_feincms_content_class', None)
-            init_path = self.init_template or self.__class__._detect_template('init.html')
-            if parent_class and init_path:
+            self.render_template = self.render_template or self._find_render_template_path(self.region)
+            self.admin_template = self.admin_template or self._find_admin_template_path()
+            if parent_class and self.admin_template:
                 if not hasattr(parent_class, 'feincms_item_editor_includes'):
                     setattr(parent_class, 'feincms_item_editor_includes', {})
-                parent_class.feincms_item_editor_includes.setdefault('head', set()).add(init_path)
+                parent_class.feincms_item_editor_includes.setdefault('head', set()).add(self.admin_template)
 
-            if self.render_template is None:
-                self.render_template = self.__class__._detect_template('render.html')
-        self._templates_initialised = True
-        super(Chunk, self).__init__(*args, **kwargs)
+        self.__templates_initialised = True
+
 
     @staticmethod
-    def _template_path(base, name):
-        return '%(app_label)s/chunks/%(model_name)s/%(name)s' % {
-            'app_label': base._meta.app_label,
-            'model_name': base._meta.module_name,
-            'name': name,
+    def _template_params(klass, base, region=None):
+        return {
+            'chunk_defining_app': base._meta.app_label,
+            'chunk_model_name': base._meta.module_name,
+            'chunk_using_app': klass._meta.app_label,
+            'chunk_using_model': klass._meta.module_name,
+            'chunk_using_region': region,
         }
 
-    @classmethod
-    def _template_paths(cls, name):
+    @staticmethod
+    def _bases_that_are_chunks(klass):
         """
-        Look for template in app/model-specific location.
+        Returns the bases of klass that are subclasses of Chunk
+        (not Chunk itself). Called recursively so as to approximate python MRO.
+        """
+        for base in klass.__bases__:
+            if issubclass(base, Chunk) and base != Chunk:
+                yield base
 
+        for base in klass.__bases__:
+            if issubclass(base, Chunk) and base != Chunk:
+                for x in Chunk._bases_that_are_chunks(base):
+                    yield x
+
+    def _admin_template_paths(self):
+        pt= "chunks/%(chunk_defining_app)s/%(chunk_model_name)s/admin_init.html"
+        klass = type(self) #the concrete model
+        for base in Chunk._bases_that_are_chunks(klass):
+            path = pt % Chunk._template_params(klass, base)
+            yield path
+
+    def _find_admin_template_path(self):
+        for p in self._admin_template_paths():
+            if Chunk._detect_template(p):
+                return p
+
+    def _render_template_paths(self, region):
+        """
+        Return
+        chunks/[chunk_defining_app]/[chunk_model]/[chunk_using_app]_[chunk_using_model]_[region_name].html
+        chunks/[chunk_defining_app]/[chunk_model]/[chunk_using_model]_[region_name].html
+        chunks/[chunk_defining_app]/[chunk_model]/[region_name].html
+        chunks/[chunk_defining_app]/[chunk_model]/render.html
+
+        And iterate up through chunk_model bases.
+        """
+
+        pt1= "chunks/%(chunk_defining_app)s/%(chunk_model_name)s/%(chunk_using_app)s_%(chunk_using_model)s_%(chunk_using_region)s.html"
+        pt2= "chunks/%(chunk_defining_app)s/%(chunk_model_name)s/%(chunk_using_model)s_%(chunk_using_region)s.html"
+        pt3= "chunks/%(chunk_defining_app)s/%(chunk_model_name)s/%(chunk_using_region)s.html"
+        pt4= "chunks/%(chunk_defining_app)s/%(chunk_model_name)s/render.html"
+
+        klass = type(self) #the concrete model
+        for base in Chunk._bases_that_are_chunks(klass):
+            params = Chunk._template_params(klass, base, region)
+            yield pt1 % params
+            yield pt2 % params
+            yield pt3 % params
+            yield pt4 % params
+
+    def _find_render_template_path(self, region):
+        for p in self._render_template_paths(region):
+            print p
+            if Chunk._detect_template(p):
+                return p
+
+    @staticmethod
+    def _detect_template(path):
+        """
+        Look for template in given path.
         Return path to template or None if not found.
-        Search using app/model names for parent classes to allow inheritance.
-
         """
-        _class = cls
-        # traverse parent classes up to (but not including) Chunk
-        while(Chunk not in _class.__bases__):
-            # choose the correct path for multiple inheritance
-            base = [
-                base for base in _class.__bases__ if issubclass(base, Chunk)][0]
-            # (this will only take the left-most relevant path in any rare
-            # cases involving diamond-relationships with Chunk)
-            yield Chunk._template_path(base, name)
-            _class = base
-
-    @classmethod
-    def _detect_template(cls, name):
-        """
-        Look for template in app/model-specific location.
-
-        Return path to template or None if not found.
-        Search using app/model names for parent classes to allow inheritance.
-
-        """
-        # traverse parent classes up to (but not including) Chunk
-        for path in cls._template_paths(name):
-            try:
-                find_template(path)
-            except TemplateDoesNotExist:
-                pass
-            else:
-                return path
-        return None
+        try:
+            find_template(path)
+            return path
+        except TemplateDoesNotExist:
+            return None
 
 def LumpyContent(*args, **kwargs):
     from warnings import warn
