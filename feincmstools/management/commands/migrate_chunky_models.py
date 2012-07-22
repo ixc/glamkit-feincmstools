@@ -6,7 +6,7 @@ from south.migration import Migrations
 from south.exceptions import NoMigrations
 from south.management.commands.schemamigration import Command as SchemaMigration
 
-from ...models import ChunkyContent
+from ...base import ChunkyContent
 from ...utils import get_subclasses
 
 class ExitCommand(Exception):
