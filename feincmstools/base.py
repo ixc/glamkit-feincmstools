@@ -371,7 +371,6 @@ class Chunk(models.Model):
 
     def _find_render_template_path(self, region):
         for p in self._render_template_paths(region):
-            print p
             if Chunk._detect_template(p):
                 return p
 
