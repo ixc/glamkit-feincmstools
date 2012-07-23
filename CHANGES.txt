@@ -1,0 +1,25 @@
+Backwards-incompatible changes introduced in July 2012 refactor:
+
+1) Lumps are now called Chunks. A search-and-replace in your files (and filenames) of lump->chunk should address this, although beware renaming any models unless you handle the corresponding table name change.
+
+2) The templates folder structure is different. Instead of /app/lumps/lumpname/render.html, use /chunks/app/lumpname/render.html.
+
+We consciously chose to break the convention of an app's templates being in the app folder, because the templates are more straightforwardly associated with the app using the chunk, rather than the app defining the chunk. It is also tedious to navigate through chunk templates if they are within separate apps.
+
+It is now possible to create a template that is only used in a specific region name, or only in a specific model, or both - see the template_paths documentation in base.py.
+
+3) init.html is now called admin_init.html.
+
+4) The ``regions`` class attribute is now ``feincms_regions``. The ``template_specs`` attribute is now called ``feincms_templates``.
+
+5) Instead of using ``default_content_types`` structure (or later, defining a lumps_by_region() classmethod), define a ``chunks_by_region(cls, r)`` classmethod that returns the chunks available to the region ``r``. Each returned list is formatted ('category', [Chunks]), thus:
+
+      [
+          (None, (TextileChunk,)),
+          ('Media resources', (OneOffImageChunk, ReusableImageChunk, VideoChunk,)),
+          ('Files', (OneOffFileChunk, ReusableFileChunk)),
+      ]
+
+This is similar to the lumps_by_region classmethod, but the old classmethod returned all lumps for all regions as a nested dictionary, which was hard to maintain, and order of lumps could not be specified.
+
+6) The management command ``lumpy_migration`` is now called ``migrate_chunky_models``.
