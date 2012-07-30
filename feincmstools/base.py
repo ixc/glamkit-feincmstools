@@ -1,9 +1,10 @@
 # -*- coding: utf8 -*-
 
-from collections import defaultdict, OrderedDict
+from collections import defaultdict
 import sys
 
 from django.db import models
+from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext as _
 
 from feincms.models import create_base_model
@@ -200,8 +201,8 @@ class ChunkyContent(create_base_model()):
         # populate a dict of registration parameters for each type
         # e.g. type: (category, [regions])
         # registration order matters as we want to control the ordering in
-        # the admin menu. Hence OrderedDict.
-        types_to_register = OrderedDict()
+        # the admin menu. Hence SortedDict.
+        types_to_register = SortedDict()
         for region, category_types in types_by_regions:
             for category, types in category_types:
                 for type in types:
