@@ -1,11 +1,11 @@
-# -*- coding: utf8 -*-
+# -*- coding: utf-8 -*-
 
 from collections import defaultdict
 import sys
 
 from django.db import models
 from django.utils.datastructures import SortedDict
-from django.utils.translation import ugettext as _
+from django.utils.translation import ugettext_lazy as _
 
 from feincms.models import create_base_model
 from mptt.models import MPTTModel, MPTTModelBase
