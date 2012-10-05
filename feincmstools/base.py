@@ -14,6 +14,8 @@ from django.template.loader import render_to_string, find_template
 from django.template.context import RequestContext, Context
 from django.template import TemplateDoesNotExist
 
+from . import settings as feincmstools_settings
+
 __all__ = ['ChunkyContent', 'ChunkyContentBase', 'HierarchicalChunkyContent', 'Chunk']
 
 # --- Chunky models ------------------------------------------------------------
@@ -193,6 +195,34 @@ class ChunkyContent(create_base_model()):
                 cls.register_regions(*cls.feincms_regions)
 
     @classmethod
+    def _get_content_type_class_name(cls, content_type):
+        """
+        Hook to allow overriding of class_name passed to create_content_type.
+
+        Previous default retained for backwards compatibility.
+        However, this produces db_table names such as:
+            <app_name>_<base_name>_<base_name><content_type_name>
+        But for longer class names, this becomes problematic, e.g.:
+            >>> len("experiences_articletranslation_"
+            ...     "articletranslationfullwidthcenteredtextblock")
+            75
+        This is problematic for database backends such as MySQL, which
+        imposes a 64-character limit on table names.
+
+        There may be other reasons for wanting to change the class/table name.
+
+        Returning None from this method will cause FeinCMS to fallback
+        onto the default configuration of using simply `content_type.__name__`
+
+        If registering the same Chunk type against multiple Chunky base
+        classes in the same app, unique class_name values must be provided
+        for each to avoid collisions.
+        """
+        if feincmstools_settings.INCLUDE_CHUNK_BASE_NAMES:
+            return "%s%s" % (cls.__name__, content_type.__name__)
+
+
+    @classmethod
     def _register_content_types(cls):
 
         # retrieve a mapping of content types for each region
@@ -214,17 +244,24 @@ class ChunkyContent(create_base_model()):
             new_content_type = cls.create_content_type(
                 type,
                 regions=params[1],
-                class_name="%s%s" % (cls.__name__, type.__name__),
+                class_name=cls._get_content_type_class_name(type),
                 optgroup=params[0],
             )
 
             # FeinCMS does not correctly fake the module appearance,
             # and shell_plus becomes subsequently confused.
-            setattr(
-                sys.modules[cls.__module__],
-                new_content_type.__name__,
-                new_content_type
-            )
+            # -- but we need to be careful if using a class_name which
+            # might already exist in that module, which can create some
+            # very confusing bugs...
+
+            if not hasattr(sys.modules[cls.__module__],
+                           new_content_type.__name__):
+                setattr(
+                    sys.modules[cls.__module__],
+                    new_content_type.__name__,
+                    new_content_type
+                )
+
 
 class HierarchicalChunkyContentBase(ChunkyContentBase, MPTTModelBase):
     pass

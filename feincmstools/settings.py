@@ -7,6 +7,7 @@ import sys
 PREFIX = 'FEINCMSTOOLS_'
 DEFAULT_SETTINGS = {
     'CONTENT_VIEW_CHOICES': (), # e.g. (('My View', 'myapp.views.myview'),)
+    'INCLUDE_CHUNK_BASE_NAMES': True,
 }
 
 def prefixed(string):
