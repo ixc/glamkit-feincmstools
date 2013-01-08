@@ -25,7 +25,7 @@ try:
     from django.conf import settings
     from easy_thumbnails.files import Thumbnailer
             
-    class ImagePreviewChunkForm(ImagePreviewInlineForm, ItemEditorForm):
+    class ImagePreviewContentForm(ImagePreviewInlineForm, ItemEditorForm):
     
         def get_images(self, instance):
             return [instance.get_content()]

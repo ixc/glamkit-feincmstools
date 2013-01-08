@@ -1,25 +1,39 @@
-Backwards-incompatible changes introduced in July 2012 refactor:
+Backwards-incompatible changes introduced in Jan 2013 refactor:
 
-1) Lumps are now called Chunks. A search-and-replace in your files (and filenames) of lump->chunk should address this, although beware renaming any models unless you handle the corresponding table name change.
+1) Chunks/Lumps are called Content or Content Types, like FeinCMS does. FeinCMS is a little confusing in this regard, as it uses Content and Content Types more-or-less interchangeably. A good mental model is to treat a piece of 'content' as an instance of a content type, but this doesn't quite match the FeinCMS nomenclature. You'll get used to it.
 
-2) The templates folder structure is different. Instead of /app/lumps/lumpname/render.html, use /chunks/app/lumpname/render.html.
+We will prefer *Content for class names (like FeinCMS), but use ``content_type`` for lowercase names, except where they are converted from the class name (e.g. in template names). We use FeinCMSDocument to denote a model that can contain Content.
 
-We consciously chose to break the convention of an app's templates being in the app folder, because the templates are more straightforwardly associated with the app using the chunk, rather than the app defining the chunk. It is also tedious to navigate through chunk templates if they are within separate apps.
+Search and replace the following (use your discretion, and beware renaming any concrete models unless you handle the corresponding table name change in e.g. a South migration):
+
+LumpyContent or ChunkyContent -> FeinCMSDocument
+Chunk or Lump -> Content
+chunk or lump -> content_type
+CHUNK or LUMP -> CONTENT_TYPE
+
+Rename the templates/chunks folder to -> templates/content_types
+(Optional): rename your chunks.py to content_types.py
+
+Backwards-incompatible changes introduced in Jul 2012 refactor:
+
+1) The templates folder structure is different. Instead of /app/lumps/lumpname/render.html, use /content_types/app/<content_model_name>/render.html.
+
+We consciously chose to break the convention of an app's templates being in the app folder, because the templates are more straightforwardly associated with the app _using_ the content type, rather than the app defining the content type. It is also tedious to navigate through lump templates if they are within separate apps.
 
 It is now possible to create a template that is only used in a specific region name, or only in a specific model, or both - see the template_paths documentation in base.py.
 
-3) init.html is now called admin_init.html.
+2) init.html is now called admin_init.html.
 
-4) The ``regions`` class attribute is now ``feincms_regions``. The ``template_specs`` attribute is now called ``feincms_templates``.
+3) The ``regions`` class attribute is now ``feincms_regions``. The ``template_specs`` attribute is now called ``feincms_templates``.
 
-5) Instead of using ``default_content_types`` structure (or later, defining a lumps_by_region() classmethod), define a ``chunks_by_region(cls, r)`` classmethod that returns the chunks available to the region ``r``. Each returned list is formatted ('category', [Chunks]), thus:
+4) Instead of using ``default_content_types`` structure (or later, defining a lumps_by_region() classmethod), define a ``content_types_by_region(cls, r)`` classmethod that returns the lumps available to the region ``r``. Each returned list is formatted ('category', [ContentTypes]), thus:
 
       [
-          (None, (TextileChunk,)),
-          ('Media resources', (OneOffImageChunk, ReusableImageChunk, VideoChunk,)),
-          ('Files', (OneOffFileChunk, ReusableFileChunk)),
+          (None, (TextileContent,)),
+          ('Media resources', (OneOffImageContent, ReusableImageContent, VideoContent,)),
+          ('Files', (OneOffFileContent, ReusableFileContent)),
       ]
 
 This is similar to the lumps_by_region classmethod, but the old classmethod returned all lumps for all regions as a nested dictionary, which was hard to maintain, and order of lumps could not be specified.
 
-6) The management command ``lumpy_migration`` is now called ``migrate_chunky_models``.
+5) The management command ``lumpy_migration`` which became ``migrate_chunky_models`` is now called ``feincms_models_migration``.

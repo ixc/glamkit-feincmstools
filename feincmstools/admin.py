@@ -4,7 +4,7 @@ from django.utils.translation import ugettext as _
 from feincms.admin.item_editor import ItemEditor
 from feincms.admin.tree_editor import TreeEditor
 
-class ChunkyContentAdmin(ItemEditor):
+class FeinCMSDocumentAdmin(ItemEditor):
 
     def get_template_list(self):
         opts = self.model._meta
@@ -12,13 +12,13 @@ class ChunkyContentAdmin(ItemEditor):
             'admin/%s/%s/item_editor.html' % (
                 opts.app_label, opts.object_name.lower()),
             'admin/%s/item_editor.html' % opts.app_label
-            ] + super(ChunkyContentAdmin, self).get_template_list()
+            ] + super(FeinCMSDocumentAdmin, self).get_template_list()
 
-class HierarchicalChunkyContentAdmin(ChunkyContentAdmin, TreeEditor):
+class HierarchicalFeinCMSDocumentAdmin(FeinCMSDocumentAdmin, TreeEditor):
     raw_id_fields = ('parent',)
 
     def _actions_column(self, content):
-        actions = super(HierarchicalChunkyContentAdmin, self)._actions_column(
+        actions = super(HierarchicalFeinCMSDocumentAdmin, self)._actions_column(
             content)
         actions.insert(0,
                        u'<a href="add/?parent=%s" title="%s">' \
@@ -42,14 +42,14 @@ class HierarchicalChunkyContentAdmin(ChunkyContentAdmin, TreeEditor):
 
 def LumpyContentAdmin(*args, **kwargs):
     from warnings import warn
-    warn("Lumps are Chunks now: "
-    "LumpyContentAdmin is deprecated; use ChunkyContentAdmin instead.",
+    warn("Lumps are Content Types now: "
+    "LumpyContentAdmin is deprecated; use FeinCMSDocumentAdmin instead.",
     DeprecationWarning, stacklevel=2)
-    return ChunkyContentAdmin(*args, **kwargs)
+    return FeinCMSDocumentAdmin(*args, **kwargs)
 
 def HierarchicalLumpyContentAdmin(*args, **kwargs):
     from warnings import warn
-    warn("Lumps are Chunks now: "
-    "HierarchicalLumpyContentAdmin is deprecated; use HierarchicalChunkyContentAdmin instead.",
+    warn("Lumps are Content Types now: "
+    "HierarchicalLumpyContentAdmin is deprecated; use HierarchicalFeinCMSDocumentAdmin instead.",
     DeprecationWarning, stacklevel=2)
-    return HierarchicalChunkyContentAdmin(*args, **kwargs)
+    return HierarchicalFeinCMSDocumentAdmin(*args, **kwargs)

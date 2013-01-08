@@ -16,25 +16,25 @@ from django.template import TemplateDoesNotExist
 
 from . import settings as feincmstools_settings
 
-__all__ = ['ChunkyContent', 'ChunkyContentBase', 'HierarchicalChunkyContent', 'Chunk']
+__all__ = ['FeinCMSDocument', 'FeinCMSDocumentBase', 'HierarchicalFeinCMSDocument', 'Content']
 
-# --- Chunky models ------------------------------------------------------------
+# --- Models that use FeinCMS Content ------------------------------------------------------------
 
-class ChunkyContentBase(models.base.ModelBase):
+class FeinCMSDocumentBase(models.base.ModelBase):
     """
     Metaclass which simply calls ``register()`` for each new class.
     """
 
     def __new__(mcs, name, bases, attrs):
-        new_class = super(ChunkyContentBase, mcs).__new__(mcs, name, bases, attrs)
+        new_class = super(FeinCMSDocumentBase, mcs).__new__(mcs, name, bases, attrs)
         new_class._register()
         return new_class
 
-class ChunkyContent(create_base_model()):
+class FeinCMSDocument(create_base_model()):
     """
-    A model which can have FeinCMS content regions, aka ``Chunk``s attached to it.
+    A model which can have FeinCMS content chunks attached to it.
 
-    See :py:meth:`feincmstools.base.ChunkyContent.chunks_by_region` for sample
+    See :py:meth:`feincmstools.base.FeinCMSDocument.content_types_by_region` for sample
     definition and a quick intro.
 
     See feincms.models.create_base_model for definitions of the register_* and
@@ -75,13 +75,13 @@ class ChunkyContent(create_base_model()):
 
     Where the list contents are the *args to the functions above.
 
-    2. Register content types (aka Chunks).
+    2. Register content types (use Content model subclasses for auto-templating, but any abstract model will work).
 
     In FeinCMS, you do this with successive calls to
-    Page.create_content_type(chunk_model, regions=None, class_name=None, **kwargs)
+    Page.create_content_type(SomeContent, regions=None, class_name=None, **kwargs)
 
     FeinCMSTools steps through the regions, and registers the content types in
-    cls.chunks_by_region(region). Define chunks_by_region in subclasses.
+    cls.content_types_by_region(region). Define content_types_by_region in subclasses.
     """
 
     # PUBLIC
@@ -92,27 +92,27 @@ class ChunkyContent(create_base_model()):
         abstract = True
 
     @classmethod
-    def chunks_by_region(cls, region):
+    def content_types_by_region(cls, region):
         """
         This should return the list of content types that
         are allowed in that region, grouped by section.
 
         This method should be overridden for the subclasses.
 
-        :return: The chunks defined for the given region.
-        Each returned list is formatted ('category', [Chunks]), thus:
+        :return: The content types defined for the given region.
+        Each returned list is formatted ('category', [SomeContent,  ...]), thus:
 
         [
-            (None, (TextileChunk,)),
-            ('Media resources', (OneOffImageChunk, ReusableImageChunk, VideoChunk,)),
-            ('Files', (OneOffFileChunk, ReusableFileChunk)),
+            (None, (TextileContent,)),
+            ('Media resources', (OneOffImageContent, ReusableImageContent, VideoContent,)),
+            ('Files', (OneOffFileContent, ReusableFileContent)),
         ]
 
         If category is ``None``, these content types will appear first in the menu.
 
         :rtype:
             ``list`` of ``tuples`` →
-                category_name, ``str``, ``list`` of chunks registered under the given category in the given region.
+                category_name, ``str``, ``list`` of content_types registered under the given category in the given region.
 
         Which results in the following menu in the admin edit form:
 
@@ -125,8 +125,8 @@ class ChunkyContent(create_base_model()):
                 One-off file
                 Reusable file
 
-        .. note:: Because ``chunks_by_region`` is called from the metaclass,
-        using python ``super`` leads to crashes. Explicitly call ``ParentClass.chunks_by_region``
+        .. note:: Because ``content_types_by_region`` is called from the metaclass,
+        using python ``super`` leads to crashes. Explicitly call ``ParentClass.content_types_by_region``
         instead. See below for example.
 
         """
@@ -142,12 +142,12 @@ class ChunkyContent(create_base_model()):
         return False
 
     @classmethod
-    def get_used_chunks(cls):
+    def get_used_content_types(cls):
         """
-        :return: All chunk models used by the class. Useful for migrations.
+        :return: All Content models used by the class. Useful for migrations.
         :rtype: ``set``
         """
-        lxr = cls._get_chunks_by_region()
+        lxr = cls._get_content_types_by_region()
 
         r = set()
 
@@ -158,21 +158,21 @@ class ChunkyContent(create_base_model()):
 
     #PRIVATE
 
-    __metaclass__ = ChunkyContentBase
+    __metaclass__ = FeinCMSDocumentBase
 
     @classmethod
-    def _get_chunks_by_region(cls):
+    def _get_content_types_by_region(cls):
         """
-        :return: All chunks grouped by category, then into regions.
+        :return: All content_types grouped by category, then into regions.
         :rtype: ``list`` of ``tuple``s
         """
-        return [(r.key, cls.chunks_by_region(r.key)) for r in cls._feincms_all_regions]
+        return [(r.key, cls.content_types_by_region(r.key)) for r in cls._feincms_all_regions]
 
 
     @classmethod
     def _register(cls):
         """
-        Create the tables for the attached chunks.
+        Create the tables for the attached content_types.
         """
         if not cls._meta.abstract: # concrete subclasses only
             # register templates or regions
@@ -214,11 +214,11 @@ class ChunkyContent(create_base_model()):
         Returning None from this method will cause FeinCMS to fallback
         onto the default configuration of using simply `content_type.__name__`
 
-        If registering the same Chunk type against multiple Chunky base
+        If registering the same Content type against multiple FeinCMSDocument base
         classes in the same app, unique class_name values must be provided
         for each to avoid collisions.
         """
-        if feincmstools_settings.INCLUDE_CHUNK_BASE_NAMES:
+        if feincmstools_settings.INCLUDE_CONTENT_TYPE_BASE_NAMES:
             return "%s%s" % (cls.__name__, content_type.__name__)
 
 
@@ -226,7 +226,7 @@ class ChunkyContent(create_base_model()):
     def _register_content_types(cls):
 
         # retrieve a mapping of content types for each region
-        types_by_regions = cls._get_chunks_by_region()
+        types_by_regions = cls._get_content_types_by_region()
 
         # populate a dict of registration parameters for each type
         # e.g. type: (category, [regions])
@@ -263,17 +263,17 @@ class ChunkyContent(create_base_model()):
                 )
 
 
-class HierarchicalChunkyContentBase(ChunkyContentBase, MPTTModelBase):
+class HierarchicalFeinCMSDocumentBase(FeinCMSDocumentBase, MPTTModelBase):
     pass
 
-class HierarchicalChunkyContent(ChunkyContent, MPTTModel):
+class HierarchicalFeinCMSDocument(FeinCMSDocument, MPTTModel):
     """
-    ChunkyContent arranged hierarchically via MPTT.
+   FeinCMSDocument arranged hierarchically via MPTT.
 
     This defines and handles the 'parent' field in a similar way to feincms.Page
     """
 
-    __metaclass__ = HierarchicalChunkyContentBase
+    __metaclass__ = HierarchicalFeinCMSDocumentBase
 
     parent = models.ForeignKey('self', verbose_name=_('Parent'), blank=True,
                                null=True, related_name='children')
@@ -293,21 +293,21 @@ class HierarchicalChunkyContent(ChunkyContent, MPTTModel):
 
 #-------------------------------------------------------------------------------
 
-class Chunk(models.Model):
+class Content(models.Model):
     """
     A feincms content type that uses a template
     to render itself, in admin and front-end.
 
     Template locations are the first matching of:
 
-    chunks/[chunk_defining_app]/[chunk_model]/[chunk_using_app]_[chunk_using_model]_[region_name].html
-    chunks/[chunk_defining_app]/[chunk_model]/[chunk_using_model]_[region_name].html
-    chunks/[chunk_defining_app]/[chunk_model]/[region_name].html
-    chunks/[chunk_defining_app]/[chunk_model]/render.html
+    content_types/[content_type_defining_app]/[content_model]/[content_type_using_app]_[content_type_using_model]_[region_name].html
+    content_types/[content_type_defining_app]/[content_model]/[content_type_using_model]_[region_name].html
+    content_types/[content_type_defining_app]/[content_model]/[region_name].html
+    content_types/[content_type_defining_app]/[content_model]/render.html
 
     And for admin:
 
-    chunks/[chunk_defining_app]/[chunk_model]/admin_init.html
+    content_types/[content_type_defining_app]/[content_model]/admin_init.html
 
     The template searches up through the model hierarchy until it finds a
     suitable template.
@@ -333,7 +333,7 @@ class Chunk(models.Model):
         return render_to_string(template, context, context_instance=RequestContext(kwargs['request']))
 
     def __init__(self, *args, **kwargs):
-        super(Chunk, self).__init__(*args, **kwargs)
+        super(Content, self).__init__(*args, **kwargs)
         if not hasattr(self, '__templates_initialised'):
             parent_class = getattr(self, '_feincms_content_class', None)
             self.render_template = self.render_template or self._find_render_template_path(self.region)
@@ -349,59 +349,59 @@ class Chunk(models.Model):
     @staticmethod
     def _template_params(klass, base, region=None):
         return {
-            'chunk_defining_app': base._meta.app_label,
-            'chunk_model_name': base._meta.module_name,
-            'chunk_using_app': klass._meta.app_label,
-            'chunk_using_model': klass._meta.module_name,
-            'chunk_using_region': region,
+            'content_type_defining_app': base._meta.app_label,
+            'content_model_name': base._meta.module_name,
+            'content_type_using_app': klass._meta.app_label,
+            'content_type_using_model': klass._meta.module_name,
+            'content_type_using_region': region,
         }
 
     @staticmethod
-    def _bases_that_are_chunks(klass):
+    def _bases_that_are_content_types(klass):
         """
-        Returns the bases of klass that are subclasses of Chunk
-        (not Chunk itself). Called recursively so as to approximate python MRO.
+        Returns the bases of klass that are subclasses of Content
+        (not Content itself). Called recursively so as to approximate python MRO.
         """
         for base in klass.__bases__:
-            if issubclass(base, Chunk) and base != Chunk:
+            if issubclass(base, Content) and base != Content:
                 yield base
 
         for base in klass.__bases__:
-            if issubclass(base, Chunk) and base != Chunk:
-                for x in Chunk._bases_that_are_chunks(base):
+            if issubclass(base, Content) and base != Content:
+                for x in Content._bases_that_are_content_types(base):
                     yield x
 
     def _admin_template_paths(self):
-        pt= "chunks/%(chunk_defining_app)s/%(chunk_model_name)s/admin_init.html"
+        pt= "content_types/%(content_type_defining_app)s/%(content_model_name)s/admin_init.html"
         klass = type(self) #the concrete model
-        for base in Chunk._bases_that_are_chunks(klass):
-            path = pt % Chunk._template_params(klass, base)
+        for base in Content._bases_that_are_content_types(klass):
+            path = pt % Content._template_params(klass, base)
             yield path
 
     def _find_admin_template_path(self):
         for p in self._admin_template_paths():
-            if Chunk._detect_template(p):
+            if Content._detect_template(p):
                 return p
 
     def _render_template_paths(self, region):
         """
         Return
-        chunks/[chunk_defining_app]/[chunk_model]/[chunk_using_app]_[chunk_using_model]_[region_name].html
-        chunks/[chunk_defining_app]/[chunk_model]/[chunk_using_model]_[region_name].html
-        chunks/[chunk_defining_app]/[chunk_model]/[region_name].html
-        chunks/[chunk_defining_app]/[chunk_model]/render.html
+        content_types/[content_type_defining_app]/[content_model]/[content_type_using_app]_[content_type_using_model]_[region_name].html
+        content_types/[content_type_defining_app]/[content_model]/[content_type_using_model]_[region_name].html
+        content_types/[content_type_defining_app]/[content_model]/[region_name].html
+        content_types/[content_type_defining_app]/[content_model]/render.html
 
-        And iterate up through chunk_model bases.
+        And iterate up through content_model bases.
         """
 
-        pt1= "chunks/%(chunk_defining_app)s/%(chunk_model_name)s/%(chunk_using_app)s_%(chunk_using_model)s_%(chunk_using_region)s.html"
-        pt2= "chunks/%(chunk_defining_app)s/%(chunk_model_name)s/%(chunk_using_model)s_%(chunk_using_region)s.html"
-        pt3= "chunks/%(chunk_defining_app)s/%(chunk_model_name)s/%(chunk_using_region)s.html"
-        pt4= "chunks/%(chunk_defining_app)s/%(chunk_model_name)s/render.html"
+        pt1= "content_types/%(content_type_defining_app)s/%(content_model_name)s/%(content_type_using_app)s_%(content_type_using_model)s_%(content_type_using_region)s.html"
+        pt2= "content_types/%(content_type_defining_app)s/%(content_model_name)s/%(content_type_using_model)s_%(content_type_using_region)s.html"
+        pt3= "content_types/%(content_type_defining_app)s/%(content_model_name)s/%(content_type_using_region)s.html"
+        pt4= "content_types/%(content_type_defining_app)s/%(content_model_name)s/render.html"
 
         klass = type(self) #the concrete model
-        for base in Chunk._bases_that_are_chunks(klass):
-            params = Chunk._template_params(klass, base, region)
+        for base in Content._bases_that_are_content_types(klass):
+            params = Content._template_params(klass, base, region)
             yield pt1 % params
             yield pt2 % params
             yield pt3 % params
@@ -409,7 +409,7 @@ class Chunk(models.Model):
 
     def _find_render_template_path(self, region):
         for p in self._render_template_paths(region):
-            if Chunk._detect_template(p):
+            if Content._detect_template(p):
                 return p
 
     @staticmethod
@@ -426,29 +426,29 @@ class Chunk(models.Model):
 
 def LumpyContent(*args, **kwargs):
     from warnings import warn
-    warn("Lumps are Chunks now: "
-    "LumpyContent is deprecated; use ChunkyContent instead.",
+    warn("Lumps are Content now: "
+    "LumpyContent is deprecated; use FeinCMSDocument instead.",
     DeprecationWarning, stacklevel=2)
-    return ChunkyContent(*args, **kwargs)
+    return FeinCMSDocument(*args, **kwargs)
 
 def LumpyContentBase(*args, **kwargs):
     from warnings import warn
-    warn("Lumps are Chunks now: "
-    "LumpyContentBase is deprecated; use ChunkyContentBase instead.",
+    warn("Lumps are Content now: "
+    "LumpyContentBase is deprecated; use FeinCMSDocumentBase instead.",
     DeprecationWarning, stacklevel=2)
-    return ChunkyContentBase(*args, **kwargs)
+    return FeinCMSDocumentBase(*args, **kwargs)
 
 def HierarchicalLumpyContent(*args, **kwargs):
     from warnings import warn
-    warn("Lumps are Chunks now: "
-    "HierarchicalLumpyContent is deprecated; use HierarchicalChunkyContent instead.",
+    warn("Lumps are Content now: "
+    "HierarchicalLumpyContent is deprecated; use HierarchicalFeinCMSDocument instead.",
     DeprecationWarning, stacklevel=2)
-    return HierarchicalChunkyContent(*args, **kwargs)
+    return HierarchicalFeinCMSDocument(*args, **kwargs)
 
 def Lump(*args, **kwargs):
     from warnings import warn
-    warn("Lumps are Chunks now: "
-    "Lump is deprecated; use Chunk instead.",
+    warn("Lumps are Content now: "
+    "Lump is deprecated; use Content instead.",
     DeprecationWarning, stacklevel=2)
-    return Chunk(*args, **kwargs)
+    return Content(*args, **kwargs)
 
