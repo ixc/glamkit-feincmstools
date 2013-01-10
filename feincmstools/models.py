@@ -1,33 +1,5 @@
 from django.utils.datastructures import SortedDict
-from . import settings as feincmstools_settings
 import sys
-
-def _get_content_type_class_name(cls, content_type):
-    """
-    Hook to allow overriding of class_name passed to create_content_type.
-
-    Previous default retained for backwards compatibility.
-    However, this produces db_table names such as:
-        <app_name>_<base_name>_<base_name><content_type_name>
-    But for longer class names, this becomes problematic, e.g.:
-        >>> len("experiences_articletranslation_"
-        ...     "articletranslationfullwidthcenteredtextblock")
-        75
-    This is problematic for database backends such as MySQL, which
-    imposes a 64-character limit on table names.
-
-    There may be other reasons for wanting to change the class/table name.
-
-    Returning None from this method will cause FeinCMS to fallback
-    onto the default configuration of using simply `content_type.__name__`
-
-    If registering the same Content type against multiple FeinCMSDocument base
-    classes in the same app, unique class_name values must be provided
-    for each to avoid collisions.
-    """
-    if feincmstools_settings.INCLUDE_CONTENT_TYPE_BASE_NAMES:
-        return "%s%s" % (cls.__name__, content_type.__name__)
-
 
 def create_content_types(feincms_model, content_types_by_region_fn):
 
@@ -53,10 +25,14 @@ def create_content_types(feincms_model, content_types_by_region_fn):
     for type, params in types_to_register.iteritems():
         option_group, regions, kwargs = params
 
+        class_name = None
+        if hasattr(feincms_model, '_get_content_type_class_name'):
+            class_name= feincms_model._get_content_type_class_name(type)
+
         new_content_type = feincms_model.create_content_type(
             type,
             regions=regions,
-            class_name= _get_content_type_class_name(feincms_model, type),
+            class_name= class_name,
             optgroup=option_group,
             **kwargs
         )

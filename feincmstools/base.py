@@ -15,6 +15,8 @@ from django.template.context import RequestContext, Context
 from django.template import TemplateDoesNotExist
 
 from .models import create_content_types
+from . import settings as feincmstools_settings
+
 
 __all__ = ['FeinCMSDocument', 'FeinCMSDocumentBase', 'HierarchicalFeinCMSDocument', 'Content']
 
@@ -90,6 +92,34 @@ class FeinCMSDocument(create_base_model()):
 
     class Meta:
         abstract = True
+
+
+    @classmethod
+    def _get_content_type_class_name(cls, content_type):
+        """
+        Hook to allow overriding of class_name passed to create_content_type.
+
+        Previous default retained for backwards compatibility.
+        However, this produces db_table names such as:
+            <app_name>_<base_name>_<base_name><content_type_name>
+        But for longer class names, this becomes problematic, e.g.:
+            >>> len("experiences_articletranslation_"
+            ...     "articletranslationfullwidthcenteredtextblock")
+            75
+        This is problematic for database backends such as MySQL, which
+        imposes a 64-character limit on table names.
+
+        There may be other reasons for wanting to change the class/table name.
+
+        Returning None from this method will cause FeinCMS to fallback
+        onto the default configuration of using simply `content_type.__name__`
+
+        If registering the same Content type against multiple FeinCMSDocument base
+        classes in the same app, unique class_name values must be provided
+        for each to avoid collisions.
+        """
+        if feincmstools_settings.USE_LEGACY_TABLE_NAMES:
+            return "%s%s" % (cls.__name__, content_type.__name__)
 
     @classmethod
     def content_types_by_region(cls, region):
