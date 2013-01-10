@@ -31,7 +31,6 @@ def _get_content_type_class_name(cls, content_type):
 
 def create_content_types(feincms_model, content_types_by_region_fn):
 
-
     # retrieve a mapping of content types for each region
     types_by_regions = [(r.key, content_types_by_region_fn(r.key)) for r in feincms_model._feincms_all_regions]
 
@@ -43,16 +42,23 @@ def create_content_types(feincms_model, content_types_by_region_fn):
     for region, category_types in types_by_regions:
         for category, types in category_types:
             for type in types:
+                kwargs = {}
+                if isinstance(type, (list, tuple)):
+                    kwargs = type[1]
+                    type = type[0]
                 if type not in types_to_register:
-                    types_to_register[type] = (category, set())
+                    types_to_register[type] = (category, set(), kwargs)
                 types_to_register[type][1].add(region)
 
     for type, params in types_to_register.iteritems():
+        option_group, regions, kwargs = params
+
         new_content_type = feincms_model.create_content_type(
             type,
-            regions=params[1],
+            regions=regions,
             class_name= _get_content_type_class_name(feincms_model, type),
-            optgroup=params[0],
+            optgroup=option_group,
+            **kwargs
         )
 
         # FeinCMS does not correctly fake the module appearance,
