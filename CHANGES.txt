@@ -14,6 +14,37 @@ CHUNK or LUMP -> CONTENT_TYPE
 Rename the templates/chunks folder to -> templates/content_types
 (Optional): rename your chunks.py to content_types.py
 
+2) FEINCMSTOOLS_INCLUDE_CONTENT_TYPE_BASE_NAMES is now FEINCMSTOOLS_USE_LEGACY_TABLE_NAMES, and defaults to False.
+
+Legacy table names had a bug where the model name was prepended to the content_type name. The worst effect of this is that it was prone to SQL 64-char table-name confusion, but also that FeinCMSTools table names differed from FeinCMS table names.
+
+If FEINCMSTOOLS_INCLUDE_CONTENT_TYPE_BASE_NAMES = False, do nothing, except erase the setting.
+
+Else if FEINCMSTOOLS_INCLUDE_CONTENT_TYPE_BASE_NAMES = True then:
+
+rename FEINCMSTOOLS_INCLUDE_CONTENT_TYPE_BASE_NAMES to FEINCMSTOOLS_USE_LEGACY_TABLE_NAMES
+
+OR, to migrate your content types to use 'proper' table names, make migrations like this:
+
+```
+content_types = ['mediafile', 'oembed', 'oneofffile', 'oneoffimage', 'rawhtml', 'textile']
+
+class Migration(SchemaMigration):
+
+    def forwards(self, orm):
+        for c in content_types:
+            db.rename_table('page_page_page%scontent' % c, 'page_page_%scontent' % c)
+
+
+    def backwards(self, orm):
+        for c in content_types:
+            db.rename_table('page_page_%scontent' % c, 'page_page_page%scontent' % c)
+```
+
+and erase the FEINCMSTOOLS_INCLUDE_CONTENT_TYPE_BASE_NAMES (as you are now using the default).
+
+
+
 Backwards-incompatible changes introduced in Jul 2012 refactor:
 
 1) The templates folder structure is different. Instead of /app/lumps/lumpname/render.html, use /content_types/app/<content_model_name>/render.html.
