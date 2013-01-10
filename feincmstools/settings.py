@@ -7,7 +7,7 @@ import sys
 PREFIX = 'FEINCMSTOOLS_'
 DEFAULT_SETTINGS = {
     'CONTENT_VIEW_CHOICES': (), # e.g. (('My View', 'myapp.views.myview'),)
-    'INCLUDE_CONTENT_TYPE_BASE_NAMES': True,
+    'USE_LEGACY_TABLE_NAMES': False, #Set to True for legacy projects.
 }
 
 def prefixed(string):
