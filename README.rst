@@ -97,7 +97,7 @@ Create an admin for the model, in ``admin.py``::
 
 			return other_content_types.get(region, standard_content_types)
 
-5) To render the FeinCMS content in the template, use something like:
+5) To render the FeinCMS content in the template, use something like::
 
 	{% load feincms_tags %}
 	{% feincms_render_region article "main" request %}
