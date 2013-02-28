@@ -51,24 +51,26 @@ class FeinCMSDocument(create_base_model()):
 
     OR
 
-        Page.register_templates({
-        'key': 'base',
-        'title': _('Standard template'),
-        'path': 'feincms_base.html',
-        'regions': (
-            ('main', _('Main content area')),
-            ('sidebar', _('Sidebar'), 'inherited'),
-            ),
-        }, {
-        'key': '2col',
-        'title': _('Template with two columns'),
-        'path': 'feincms_2col.html',
-        'regions': (
-            ('col1', _('Column one')),
-            ('col2', _('Column two')),
-            ('sidebar', _('Sidebar'), 'inherited'),
-            ),
-        })
+        Page.register_templates(
+            {
+                'key': 'base',
+                'title': _('Standard template'),
+                'path': 'feincms_base.html',
+                'regions': (
+                    ('main', _('Main content area')),
+                    ('sidebar', _('Sidebar'), 'inherited'),
+                    ),
+            }, {
+                'key': '2col',
+                'title': _('Template with two columns'),
+                'path': 'feincms_2col.html',
+                'regions': (
+                    ('col1', _('Column one')),
+                    ('col2', _('Column two')),
+                    ('sidebar', _('Sidebar'), 'inherited'),
+                    ),
+            }
+        )
 
     FeinCMSTools registers the template config in
         cls.feincms_templates = [{...}, {...}, ...]
