@@ -16,6 +16,7 @@ To make a FeinCMS Document:
 1) In `models.py` Define your model as a subclass of `feincmstools.base.FeinCMSDocument` (or `feincmstools.base.HierarchicalFeinCMSDocument` for documents you want to arrange in a tree).
 
 If you are using `HierarchicalFeinCMSDocument`, you may want to mix in `HierarchicalSlugField`, which generates a slug value based on concatenations of the slugs of the document's parents.
+::
 
 	from feincmstools.fields import HierarchicalSlugField
 	from feincmstools.base import HierarchicalFeinCMSDocument
@@ -25,7 +26,7 @@ If you are using `HierarchicalFeinCMSDocument`, you may want to mix in `Hierarch
 			title = models.CharField(max_length=255)
 			slug = models.SlugField('slug', max_length=255, unique=True, db_index=True)
 
-Create an admin for the model, in `admin.py`:
+Create an admin for the model, in `admin.py`::
 
 	from django.contrib import admin
 	from feincmstools.admin import HierarchicalFeinCMSDocumentAdmin
@@ -36,6 +37,7 @@ Create an admin for the model, in `admin.py`:
 
 
 2) Define `feincms_regions` OR `feincms_templates` as an attribute of your model. feincms_regions is a list of region name/title tuples. feincms_templates allows different regions to be used and different templates rendered depending on user selection.
+::
 
 	class Article(HierarchicalFeinCMSDocument, HierarchicalSlugField):
 			...
@@ -69,7 +71,8 @@ Create an admin for the model, in `admin.py`:
 			]
 
 
-3) Define the classmethod `content_types_by_region(region)`. This should return a list of which content types are allowed in which region, grouped into menu sections that appear in the admin UI. To define content types, see below.
+3) Define the classmethod `content_types_by_region(region)`. This should return a list of which content types are allowed in which region, grouped into menu sections that appear in the admin UI. To define content types, see the next section.
+::
 
 	class Article(HierarchicalFeinCMSDocument, HierarchicalSlugField):
 		...
@@ -104,7 +107,7 @@ To make a FeinCMS Content Type:
 
 FeinCMStools also provides a `Content` abstract model that you can use for creating FeinCMS content types. If you use `feincmstools.base.Content`, it looks through hierarchy of template paths, allowing you to finely control the appearance of content types in different regions and/or apps. To create a content type:
 
-1) In content_types.py (the name doesn't matter, but this is a good convention), define an abstract model that subclasses Content:
+1) In content_types.py (the name doesn't matter, but this is a good convention), define an abstract model that subclasses Content::
 
 	from django.db import models
 	from feincmstools.base import Content
@@ -115,7 +118,7 @@ FeinCMStools also provides a `Content` abstract model that you can use for creat
 			class Meta:
 					abstract=True
 
-2) Create a template to render the content at /templates/content_types/<your_app>/text/render.html. The template is provided with a context variable `content`, which is the Content model instance. You can treat it as any other Django model, e.g.:
+2) Create a template to render the content at /templates/content_types/<your_app>/text/render.html. The template is provided with a context variable `content`, which is the Content model instance. You can treat it as any other Django model, e.g.::
 
 	{{ content.text|linebreaks }}
 
