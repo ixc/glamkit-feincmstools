@@ -35,6 +35,7 @@ Create an admin for the model, in ``admin.py``::
 	class ArticleAdmin(HierarchicalFeinCMSDocumentAdmin):
 		prepopulated_fields = {"slug": ("title", )}
 
+        admin.site.register(Article, ArticleAdmin)
 
 2) Define ``feincms_regions`` OR ``feincms_templates`` as an attribute of your model. ``feincms_regions`` is a list of region name/title tuples. ``feincms_templates`` allows different regions to be used and different templates rendered depending on user selection.
 ::
@@ -78,7 +79,7 @@ Create an admin for the model, in ``admin.py``::
 		...
 
 		@classmethod
-		def content_types_by_region(region):
+		def content_types_by_region(cls, region):
 			standard_content_types = [
 				(None, (Text, HorizontalRule)),
 				('Media', (OEmbedContent)), #The string 'Media' is shown in the admin menu.
