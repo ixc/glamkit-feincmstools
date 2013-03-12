@@ -9,13 +9,13 @@ from warnings import warn
 
 class FormWithAdminFeatures(ItemEditorForm):
     def __init__(self, *args, **kwargs):
-        if self.raw_id_fields:
+        if getattr(self, 'raw_id_fields', None):
             for field_name in self.raw_id_fields:
                 self.base_fields[field_name].widget = ForeignKeyRawIdWidget(
                     rel=self._meta.model._meta.get_field(field_name).rel,
                     admin_site=admin.site
                 )
-        if self.filter_horizontal:
+        if getattr(self, 'filter_horizontal', None):
             for field_name in self.filter_horizontal:
                 self.base_fields[field_name].widget = FilteredSelectMultiple(
                     field_name, 0
