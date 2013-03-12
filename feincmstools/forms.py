@@ -18,22 +18,38 @@ class FormWithRawIDFields(ItemEditorForm):
             self.fields.insert(1, self.content_field_name, self.fields.pop(self.content_field_name))
 
 
+class FormWithFilterHoriz(ItemEditorForm):
+    def __init__(self, *args, **kwargs):
+        if self.filter_horizontal:
+            for field_name in self.filter_horizontal:
+                self.base_fields[field_name].widget \
+                    = FilteredSelectMultiple(field_name, 0)
+        super(FormWithFilterHoriz, self).__init__(*args, **kwargs)
+        if hasattr(self, 'content_field_name') \
+                and self.content_field_name in self.fields:
+            self.fields.insert(
+                1,
+                self.content_field_name,
+                self.fields.pop(self.content_field_name)
+            )
+
+
 try:
     from adminboost.preview import ImagePreviewInlineForm # Soft dependency on adminboost
     import os
     from django.core.files import File
     from django.conf import settings
     from easy_thumbnails.files import Thumbnailer
-            
+
     class ImagePreviewContentForm(ImagePreviewInlineForm, ItemEditorForm):
-    
+
         def get_images(self, instance):
             return [instance.get_content()]
-    
+
     class FixedImagePreviewForm(ImagePreviewInlineForm, ItemEditorForm):
         preview_instance_required = False
         preview_paths = []
-        
+
         def get_images(self, instance):
             images = []
             for path in self.preview_paths:
@@ -43,7 +59,7 @@ try:
                 image = MockImage()
                 image.file = Thumbnailer(File(file_data), name=path)
                 images.append(image)
-            return images    
-        
+            return images
+
 except ImportError:
     pass
