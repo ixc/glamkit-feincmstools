@@ -31,7 +31,7 @@ class FormWithAdminFeatures(ItemEditorForm):
             )
 
 
-class FormWithRawIDFields(ItemEditorForm):
+class FormWithRawIDFields(FormWithAdminFeatures):
     raw_id_fields = []
 
     def __init__(self, *args, **kwargs):
@@ -41,16 +41,7 @@ class FormWithRawIDFields(ItemEditorForm):
         )
         warn(warning_message, DeprecationWarning)
 
-        if self.raw_id_fields:
-            for field_name in self.raw_id_fields:
-                self.base_fields[field_name].widget = ForeignKeyRawIdWidget(
-                    rel=self._meta.model._meta.get_field(field_name).rel,
-                    admin_site=admin.site
-                )
-
         super(FormWithRawIDFields, self).__init__(*args, **kwargs)
-        if hasattr(self, 'content_field_name') and self.content_field_name in self.fields:
-            self.fields.insert(1, self.content_field_name, self.fields.pop(self.content_field_name))
 
 
 try:
