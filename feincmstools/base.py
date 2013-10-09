@@ -4,6 +4,7 @@ from collections import defaultdict
 import sys
 
 from django.db import models
+from django.http import HttpRequest
 from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext_lazy as _
 
@@ -12,7 +13,7 @@ from mptt.models import MPTTModel, MPTTModelBase
 
 from django.template.loader import render_to_string, find_template
 from django.template.context import RequestContext, Context
-from django.template import TemplateDoesNotExist
+from django.template import TemplateDoesNotExist, Template
 
 from .models import create_content_types
 from . import settings as feincmstools_settings
@@ -94,7 +95,6 @@ class FeinCMSDocument(create_base_model()):
 
     class Meta:
         abstract = True
-
 
     @classmethod
     def _get_content_type_class_name(cls, content_type):
@@ -231,6 +231,17 @@ class FeinCMSDocument(create_base_model()):
     def _register_content_types(cls):
         return create_content_types(cls, cls.content_types_by_region)
 
+    def search_text(self):
+        request = HttpRequest()
+        template = Template('''{% load feincms_tags %}
+            {% filter striptags %}
+            {% feincms_render_region object "main" request %}
+            {% endfilter %}
+            ''')
+        context = RequestContext(request)
+        context['object'] = self
+        #import pdb;pdb.set_trace()
+        return template.render(context)
 
 class HierarchicalFeinCMSDocumentBase(FeinCMSDocumentBase, MPTTModelBase):
     pass
