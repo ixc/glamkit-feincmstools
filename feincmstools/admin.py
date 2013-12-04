@@ -25,7 +25,7 @@ class HierarchicalFeinCMSDocumentAdmin(FeinCMSDocumentAdmin, TreeEditor):
                        u'<img src="%simg/icon_addlink.gif" alt="%s"></a>' % (
                            content.pk,
                            _('Add child content'),
-                           settings.ADMIN_MEDIA_PREFIX,
+                           settings.STATIC_URL+"/admin/",
                            _('Add child content'))
 
         )
@@ -35,7 +35,7 @@ class HierarchicalFeinCMSDocumentAdmin(FeinCMSDocumentAdmin, TreeEditor):
                            u'<img src="%simg/selector-search.gif" alt="%s" /></a>' % (
                                content.get_absolute_url(),
                                _('View on site'),
-                               settings.ADMIN_MEDIA_PREFIX,
+                               settings.STATIC_URL+"/admin/",
                                _('View on site'))
             )
         return actions
