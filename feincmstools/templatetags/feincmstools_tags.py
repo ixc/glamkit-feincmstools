@@ -1,6 +1,9 @@
 import os
 
 from django import template
+
+from feincms.templatetags.feincms_tags import feincms_render_content
+
 register = template.Library()
 
 @register.filter
@@ -43,3 +46,8 @@ def is_sibling_of(page1, page2):
 def get_extension(filename):
     """ Return the extension from a file name """
     return os.path.splitext(filename)[1][1:]
+
+
+@register.assignment_tag(takes_context=True)
+def feincms_render_content_as(context, content, request=None):
+    return feincms_render_content(context, content, request)
