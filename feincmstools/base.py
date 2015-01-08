@@ -309,7 +309,7 @@ class Content(models.Model):
             if hasattr(kwargs['context'], 'flatten'):
                 context.update(kwargs['context'].flatten())
             else:
-                context.update(kwargs['context'])
+                context = Context(kwargs['context'])
         context['content'] = self
         if hasattr(self, 'extra_context') and callable(self.extra_context):
             context.update(self.extra_context(kwargs['request']))
