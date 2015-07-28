@@ -11,7 +11,7 @@ from django.utils.translation import ugettext_lazy as _
 from feincms.models import create_base_model
 from mptt.models import MPTTModel, MPTTModelBase
 
-from django.template.loader import render_to_string, find_template
+from django.template.loader import render_to_string, get_template
 from django.template.context import RequestContext, Context
 from django.template import TemplateDoesNotExist, Template
 
@@ -299,21 +299,25 @@ class Content(models.Model):
     render_template = None # For rendering on the front end
 
     def render(self, **kwargs):
-        assert 'request' in kwargs
-
         template = self.render_template or self._find_render_template_path(self.region)
         if not template:
-            raise NotImplementedError('No template found for rendering %s content. I tried ["%s"].' % (self.__class__.__name__, '", "'.join(self._render_template_paths(self.region))))
-        context = {}
-        if 'context' in kwargs:
-            if hasattr(kwargs['context'], 'flatten'):
-                context.update(kwargs['context'].flatten())
-            else:
-                context = Context(kwargs['context'])
+            raise NotImplementedError(
+                'No template found for rendering %s content. I tried ["%s"].' % (
+                    self.__class__.__name__,
+                    '", "'.join(self._render_template_paths(self.region))
+                )
+            )
+        # Request is required, throw a KeyError if it's not there
+        request = kwargs['request']
+        context = kwargs.get('context', {})
         context['content'] = self
         if hasattr(self, 'extra_context') and callable(self.extra_context):
-            context.update(self.extra_context(kwargs['request']))
-        return render_to_string(template, context, context_instance=RequestContext(kwargs['request']))
+            context.update(self.extra_context(request))
+        if hasattr(context, 'flatten'):
+            # render_to_string expects a dictionary, not a context, this is
+            # more strictly enforced in Django 1.8
+            context = context.flatten()
+        return render_to_string(template, context, context_instance=RequestContext(request))
 
     def __init__(self, *args, **kwargs):
         super(Content, self).__init__(*args, **kwargs)
@@ -331,11 +335,20 @@ class Content(models.Model):
 
     @staticmethod
     def _template_params(klass, base, region=None):
+        # Django <= 1.6 uses "module_name"; Django >= 1.7 uses "model_name"
+        try:
+            base_model_name = base._meta.model_name
+        except AttributeError:
+            base_model_name = base._meta.module_name
+        try:
+            klass_model_name = klass._meta.model_name
+        except AttributeError:
+            klass_model_name = klass._meta.module_name
         return {
             'content_type_defining_app': base._meta.app_label,
-            'content_model_name': base._meta.module_name,
+            'content_model_name': base_model_name,
             'content_type_using_app': klass._meta.app_label,
-            'content_type_using_model': klass._meta.module_name,
+            'content_type_using_model': klass_model_name,
             'content_type_using_region': region,
         }
 
@@ -402,7 +415,8 @@ class Content(models.Model):
         Return path to template or None if not found.
         """
         try:
-            find_template(path)
+            # find_template isn't available in Django 1.8
+            get_template(path)
             return path
         except TemplateDoesNotExist:
             return None
