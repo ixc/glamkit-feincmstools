@@ -1,3 +1,12 @@
-*.pyc
-glamkit_feincmstools.egg-info
-.idea
+# Only include files that are actually generated or required by the project.
+
+# For anything that is local to your environment, e.g. dotfiles created by your
+# IDE, use your own `~/.gitignore_global` file.
+
+*.egg-info/
+*.py[co]
+/.eggs/
+/.tox/
+/build/
+/dist/
+

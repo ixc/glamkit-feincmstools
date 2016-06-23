@@ -1,15 +1,23 @@
 #!/usr/bin/env python
 
-from setuptools import setup, find_packages
+import setuptools
+import sys
 
-setup(name='glamkit-feincmstools',
-    version='0.5.0',
+if {'bdist_wheel', 'sdist'}.intersection(sys.argv):
+    long_description = open('README.rst').read()
+
+setuptools.setup(
+    name='glamkit-feincmstools',
+    use_scm_version={'version_scheme': 'post-release'},  # Get version from git tags.
     description='Some neat and useful bits on top of FeinCMS',
-    author='Greg Turner',
-    author_email='greg@interaction.net.au',
-    url='http://glamkit.org/',
-    packages=find_packages(),
-    zip_safe=False,
+    author='Interaction Consortium',
+    author_email='studio@interaction.net.au',
+    url='https://github.com/ixc/glamkit-feincmstools',
+    long_description=locals().get('long_description', ''),
+    license='BSD',
+    packages=setuptools.find_packages(),
+    include_package_data=True,
+    setup_requires=['setuptools_scm'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Web Environment',
