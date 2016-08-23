@@ -44,7 +44,7 @@ class Parser(object):
         return item.level
     
     def build_tree(self):
-        for item in self.model.objects.order_by('lft', 'tree_id'):
+        for item in self.model._base_manager.order_by('lft', 'tree_id'):
             self.parse_item(item)
     
         for subtree in self.tree.values():
