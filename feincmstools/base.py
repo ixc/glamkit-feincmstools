@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from collections import defaultdict
+from collections import OrderedDict as SortedDict
 import sys
 
 from django.db import models
 from django.http import HttpRequest
-from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext_lazy as _
 
 from feincms.models import create_base_model
@@ -415,7 +415,6 @@ class Content(models.Model):
         Return path to template or None if not found.
         """
         try:
-            # find_template isn't available in Django 1.8
             get_template(path)
             return path
         except TemplateDoesNotExist:
