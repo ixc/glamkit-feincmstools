@@ -1,4 +1,4 @@
-from django.utils.datastructures import SortedDict
+from collections import OrderedDict as SortedDict
 import sys
 
 def create_content_types(feincms_model, content_types_by_region_fn):

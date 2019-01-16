@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 
 from collections import defaultdict
+from collections import OrderedDict as SortedDict
 import sys
 
 from django.db import models
 from django.http import HttpRequest
-from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext_lazy as _
 
 from feincms.models import create_base_model
 from mptt.models import MPTTModel, MPTTModelBase
 
-from django.template.loader import render_to_string, find_template
+from django.template.loader import render_to_string, get_template
 from django.template.context import RequestContext, Context
 from django.template import TemplateDoesNotExist, Template
 
@@ -399,7 +399,7 @@ class Content(models.Model):
         Return path to template or None if not found.
         """
         try:
-            find_template(path)
+            get_template(path)
             return path
         except TemplateDoesNotExist:
             return None
