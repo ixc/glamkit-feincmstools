@@ -13,7 +13,7 @@ DEFAULT_SETTINGS = {
 def prefixed(string):
     return '%s%s' % (PREFIX, string)
 
-for name, default in DEFAULT_SETTINGS.items():
+for name, default in list(DEFAULT_SETTINGS.items()):
     setattr(sys.modules[__name__], name,
             getattr(settings, prefixed(name), default))
 

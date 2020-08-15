@@ -1,9 +1,10 @@
 from operator import add
 from django.db.models import FileField
 from django.db.models.signals import post_delete
+from functools import reduce
 
 def _get_subclasses(klass):
-    return (klass,) + reduce(add, map(_get_subclasses, klass.__subclasses__()), ())
+    return (klass,) + reduce(add, list(map(_get_subclasses, klass.__subclasses__())), ())
 
 def get_subclasses(model, include_abstract=False):
     """
@@ -20,7 +21,7 @@ def _delete_files(sender, instance=None, **kwargs):
                 for field in instance._meta.fields
                 if isinstance(field, FileField)
                 and getattr(instance, field.name)]:
-            print file_field, getattr(instance, file_field).path
+            print(file_field, getattr(instance, file_field).path)
             getattr(instance, file_field).delete(save=False)
 
 def delete_files_on_delete(model):

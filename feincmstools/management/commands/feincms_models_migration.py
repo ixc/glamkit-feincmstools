@@ -47,8 +47,8 @@ class Command(BaseCommand):
         # Get list of apps that have models which subclass FeinCMSDocument
         apps_to_migrate = [model._meta.app_label for model in get_subclasses(FeinCMSDocument)]
         if verbosity:
-            print 'Automatic schema migrations will be created for the following apps:'
-            print '\t%s' % ', '.join(apps_to_migrate)
+            print('Automatic schema migrations will be created for the following apps:')
+            print('\t%s' % ', '.join(apps_to_migrate))
         # Exit if running a dry run
         if dry_run:
             return
@@ -60,7 +60,7 @@ class Command(BaseCommand):
                     raise NoMigrations(app)
             except NoMigrations:
                 if not force:
-                    print 'The app "%s" is not tracked by South, either create an initial migration or run this command with "--force" to do so automatically.' % app
+                    print('The app "%s" is not tracked by South, either create an initial migration or run this command with "--force" to do so automatically.' % app)
                     ok_to_migrate = False
         # Now migrate the apps
         if ok_to_migrate:
@@ -70,11 +70,11 @@ class Command(BaseCommand):
                 except ExitCommand:
                     pass
             if verbosity > 1:
-                print 'Done. The output from the commands was:\n\t',
-                print '\n\t'.join(command_log)
+                print('Done. The output from the commands was:\n\t', end=' ')
+                print('\n\t'.join(command_log))
             elif verbosity:
                 if unchanged_count == len(apps_to_migrate):
-                    print 'No changes detected in any of the above apps.'
+                    print('No changes detected in any of the above apps.')
                 else:
-                    print 'Finished creating migrations.'
+                    print('Finished creating migrations.')
         

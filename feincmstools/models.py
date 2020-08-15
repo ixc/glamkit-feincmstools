@@ -22,7 +22,7 @@ def create_content_types(feincms_model, content_types_by_region_fn):
                     types_to_register[type] = (category, set(), kwargs)
                 types_to_register[type][1].add(region)
 
-    for type, params in types_to_register.iteritems():
+    for type, params in types_to_register.items():
         option_group, regions, kwargs = params
 
         class_name = None

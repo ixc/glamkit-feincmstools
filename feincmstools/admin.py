@@ -21,8 +21,8 @@ class HierarchicalFeinCMSDocumentAdmin(FeinCMSDocumentAdmin, TreeEditor):
         actions = super(HierarchicalFeinCMSDocumentAdmin, self)._actions_column(
             content)
         actions.insert(0,
-                       u'<a href="add/?parent=%s" title="%s">' \
-                       u'<img src="%simg/icon_addlink.gif" alt="%s"></a>' % (
+                       '<a href="add/?parent=%s" title="%s">' \
+                       '<img src="%simg/icon_addlink.gif" alt="%s"></a>' % (
                            content.pk,
                            _('Add child content'),
                            settings.ADMIN_MEDIA_PREFIX,
@@ -31,8 +31,8 @@ class HierarchicalFeinCMSDocumentAdmin(FeinCMSDocumentAdmin, TreeEditor):
         )
         if hasattr(content, 'get_absolute_url'):
             actions.insert(0,
-                           u'<a href="%s" title="%s">' \
-                           u'<img src="%simg/selector-search.gif" alt="%s" /></a>' % (
+                           '<a href="%s" title="%s">' \
+                           '<img src="%simg/selector-search.gif" alt="%s" /></a>' % (
                                content.get_absolute_url(),
                                _('View on site'),
                                settings.ADMIN_MEDIA_PREFIX,

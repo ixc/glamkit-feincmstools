@@ -21,13 +21,13 @@ class Parser(object):
             return self.parsed[self.parsed.index(item)].level
         if item.parent:
             if item.parent not in self.parsed:
-                print 'Uh-oh, encountered a child %s with unparsed parent %s.' % (item, item.parent)
+                print('Uh-oh, encountered a child %s with unparsed parent %s.' % (item, item.parent))
             else:
                 item.parent = self.parsed[self.parsed.index(item.parent)]
             item.level = self.parse_item(item.parent) + 1
             item.tree_id = item.parent.tree_id
         else:
-            item.tree_id = self.counter.next()
+            item.tree_id = next(self.counter)
             item.level = 0
         if item.tree_id not in self.tree:
             self.tree[item.tree_id] = [item,item]
@@ -47,7 +47,7 @@ class Parser(object):
         for item in self.model.objects.order_by('lft', 'tree_id'):
             self.parse_item(item)
     
-        for subtree in self.tree.values():
+        for subtree in list(self.tree.values()):
             for idx, item in enumerate(subtree, 1):
                 if item not in self.found:
                     item.lft = idx
